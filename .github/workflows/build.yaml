@@ -10,20 +10,15 @@ on:
 permissions: read-all
 jobs:
   build-wheel:
-    name: Build wheel with python ${{ matrix.python }}
+    name: Build wheel with python
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python:
-          - '3.11'
-          - '3.12'
     steps:
       - name: Checkout the Git repository
         uses: actions/checkout@v3
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python }}
+          python-version: '3.11'
           cache: 'pip'
       - name: Install build tool
         run: pip install build
@@ -31,7 +26,7 @@ jobs:
         run: python -m build --wheel
       - uses: actions/upload-artifact@v4
         with:
-          name: pip-wheel-${{ matrix.python }}
+          name: pip-wheel
           path: dist/*
           if-no-files-found: error
   build-sdist:
@@ -59,6 +54,11 @@ jobs:
     if: github.repository == 'Eeems/python-ext4' && github.event_name == 'release' && startsWith(github.ref, 'refs/tags')
     needs: [build-sdist]
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        artifact:
+          - 'pip-sdist'
+          - 'pip-wheel'
     permissions:
       id-token: write
       contents: write
@@ -70,7 +70,7 @@ jobs:
         id: download
         uses: actions/download-artifact@v4
         with:
-          name: pip-sdist
+          name: ${{ matrix.artifact }}
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
@@ -87,8 +87,7 @@ jobs:
       matrix:
         artifact:
           - 'pip-sdist'
-          - 'pip-wheel-3.11'
-          - 'pip-wheel-3.12'
+          - 'pip-wheel'
     permissions:
       contents: write
     steps:
