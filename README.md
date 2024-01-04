@@ -10,7 +10,7 @@ from ext4 import Volume
 with open("image.ext4", "rb") as f:
     # Extract specific file
     volume = Volume(image, offset=0)
-    inode = volume.root.inode_at("/etc/version")
+    inode = volume.inode_at("/etc/version")
     with open("version", "wb") as f:
         f.write(inode.open().read())
 ```
