@@ -9,7 +9,7 @@ on:
     types: [released]
 permissions: read-all
 jobs:
-  build-wheel:
+  build:
     name: Build wheel with python
     runs-on: ubuntu-latest
     steps:
@@ -23,42 +23,17 @@ jobs:
       - name: Install build tool
         run: pip install build
       - name: Building package
-        run: python -m build --wheel
+        run: python -m build
       - uses: actions/upload-artifact@v4
         with:
-          name: pip-wheel
-          path: dist/*
-          if-no-files-found: error
-  build-sdist:
-    name: Build sdist
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout the Git repository
-        uses: actions/checkout@v3
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-      - name: Install build tool
-        run: pip install build
-      - name: Building package
-        run: python -m build --sdist
-      - uses: actions/upload-artifact@v4
-        with:
-          name: pip-sdist
+          name: pip
           path: dist/*
           if-no-files-found: error
   publish:
     name: Publish to PyPi
     if: github.repository == 'Eeems/python-ext4' && github.event_name == 'release' && startsWith(github.ref, 'refs/tags')
-    needs: [build-sdist]
+    needs: [build]
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        artifact:
-          - 'pip-sdist'
-          - 'pip-wheel'
     permissions:
       id-token: write
       contents: write
@@ -70,24 +45,17 @@ jobs:
         id: download
         uses: actions/download-artifact@v4
         with:
-          name: ${{ matrix.artifact }}
+          name: pip
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: ${{ steps.download.outputs.download-path }}
           skip-existing: true
   release:
-    name: Add ${{ matrix.artifact }} to release
+    name: Add pip to release
     if: github.repository == 'Eeems/python-ext4' && github.event_name == 'release' && startsWith(github.ref, 'refs/tags')
-    needs:
-      - build-wheel
-      - build-sdist
+    needs: [build]
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        artifact:
-          - 'pip-sdist'
-          - 'pip-wheel'
     permissions:
       contents: write
     steps:
@@ -97,7 +65,7 @@ jobs:
         id: download
         uses: actions/download-artifact@v4
         with:
-          name: ${{ matrix.artifact }}
+          name: pip
           path: dist
       - name: Upload to release
         run:
