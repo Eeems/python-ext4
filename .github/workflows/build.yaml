@@ -1,0 +1,109 @@
+name: Check and Build
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+  release:
+    types: [released]
+permissions: read-all
+jobs:
+  build-wheel:
+    name: Build wheel with python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python:
+          - '3.11'
+          - '3.12'
+    steps:
+      - name: Checkout the Git repository
+        uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+          cache: 'pip'
+      - name: Install build tool
+        run: pip install build
+      - name: Building package
+        run: python -m build --wheel
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pip-wheel-${{ matrix.python }}
+          path: dist/*
+          if-no-files-found: error
+  build-sdist:
+    name: Build sdist
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the Git repository
+        uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install build tool
+        run: pip install build
+      - name: Building package
+        run: python -m build --sdist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pip-sdist
+          path: dist/*
+          if-no-files-found: error
+  publish:
+    name: Publish to PyPi
+    if: github.repository == 'Eeems/python-ext4' && github.event_name == 'release' && startsWith(github.ref, 'refs/tags')
+    needs: [build-sdist]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+    environment:
+      name: pypi
+      url: https://pypi.org/p/ext4
+    steps:
+      - name: Download pip packages
+        id: download
+        uses: actions/download-artifact@v4
+        with:
+          name: pip-sdist
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: ${{ steps.download.outputs.download-path }}
+          skip-existing: true
+  release:
+    name: Add ${{ matrix.artifact }} to release
+    if: github.repository == 'Eeems/python-ext4' && github.event_name == 'release' && startsWith(github.ref, 'refs/tags')
+    needs:
+      - build-wheel
+      - build-sdist
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        artifact:
+          - 'pip-sdist'
+          - 'pip-wheel-3.11'
+          - 'pip-wheel-3.12'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout the Git repository
+        uses: actions/checkout@v4
+      - name: Download executable
+        id: download
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist
+      - name: Upload to release
+        run:
+          find . -type f | xargs -rI {} gh release upload "$TAG" {} --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        working-directory: ${{ steps.download.outputs.download-path }}
