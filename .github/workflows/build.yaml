@@ -10,7 +10,7 @@ on:
 permissions: read-all
 jobs:
   build:
-    name: Build wheel with python
+    name: Build pip package
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the Git repository
