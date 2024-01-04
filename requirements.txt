@@ -1,3 +1,2 @@
 cachetools==5.3.2
 crcmod==1.7
-ctypes==1.0.2
