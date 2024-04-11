@@ -154,7 +154,7 @@ class Volume(object):
             seek = len(self) - offset
 
         if seek < 0:
-            raise OSError()
+            raise OSError(errno.EINVAL, os.strerror(errno.EINVAL))
 
         self.cursor = seek
         return self.cursor
@@ -206,7 +206,7 @@ class Volume(object):
 
         while paths:
             if not isinstance(cwd, Directory):
-                raise OSError(errno.ENOTDIR)
+                raise OSError(errno.ENOTDIR, os.strerror(errno.ENOTDIR))
 
             name = paths.pop(0)
             inode = None
