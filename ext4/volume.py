@@ -182,7 +182,7 @@ class Volume(object):
         if isinstance(path, bytes):
             path = path.decode("utf-8")
 
-        return tuple(x.encode("utf-8") for x in PurePosixPath(path).parts)
+        return tuple(x.encode("utf-8") for x in PurePosixPath(path).parts[1:])
 
     @cached(cache=LRUCache(maxsize=32))
     def inode_at(self, path):
