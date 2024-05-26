@@ -27,7 +27,7 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
-      - name: Building package
+      - name: Run test
         shell: bash
         run: ./test.sh
   build:
