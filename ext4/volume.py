@@ -1,8 +1,8 @@
 import io
-import os
 import errno
 
 from uuid import UUID
+from pathlib import PurePosixPath
 
 from cachetools import cached
 from cachetools import LRUCache
@@ -179,23 +179,10 @@ class Volume(object):
 
     @staticmethod
     def path_tuple(path):
-        if not isinstance(path, bytes):
-            path = path.encode("utf-8")
+        if isinstance(path, bytes):
+            path = path.decode("utf-8")
 
-        path = os.path.normpath(path)
-        paths = tuple()
-        if path == "/":
-            return paths
-
-        while True:
-            split = os.path.split(path)
-            path = split[0]
-            if not split[1]:
-                break
-
-            paths = (split[1],) + paths
-
-        return paths
+        return tuple(x.encode("utf-8") for x in PurePosixPath(path).parts)
 
     @cached(cache=LRUCache(maxsize=32))
     def inode_at(self, path):
