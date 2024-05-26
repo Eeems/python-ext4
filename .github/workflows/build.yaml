@@ -9,6 +9,34 @@ on:
     types: [released]
 permissions: read-all
 jobs:
+  test:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+    steps:
+      - name: Checkout the Git repository
+        uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Building package
+        shell: bash
+        run: |
+          python -m venv .venv
+          [ -f .venv/Scripts/activate ] && .venv/Scripts/activate || [ -f .venv/bin/activate ] && .venv/bin/activate
+          python -m pip install wheel
+          python -m pip install \
+            --extra-index-url=https://wheels.eeems.codes/ \
+            -r requirements.remote.txt
+          python test.py
   build:
     name: Build pip package
     runs-on: ubuntu-latest
