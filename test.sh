@@ -1,7 +1,14 @@
 #!/bin/bash
 set -e
 python -m venv .venv
-[ -f .venv/Scripts/activate ] && . .venv/Scripts/activate || [ -f .venv/bin/activate ] && . .venv/bin/activate
+if [ -f .venv/Scripts/activate ]; then
+  . .venv/Scripts/activate
+elif [ -f .venv/bin/activate ]; then
+  . .venv/bin/activate
+else
+  echo "venv missing"
+  exit 1
+fi
 python -m pip install wheel
 python -m pip install \
   --extra-index-url=https://wheels.eeems.codes/ \
