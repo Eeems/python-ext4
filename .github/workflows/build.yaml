@@ -10,7 +10,7 @@ on:
 permissions: read-all
 jobs:
   test:
-    name: Test on ${{ matrix.os }}
+    name: Test on ${{ matrix.os }} python ${{ matrix.python }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -19,13 +19,16 @@ jobs:
           - ubuntu-latest
           - windows-latest
           - macos-latest
+        python:
+          - '3.11'
+          - '3.12'
     steps:
       - name: Checkout the Git repository
         uses: actions/checkout@v4
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: ${{ matrix.python }}
           cache: 'pip'
       - name: Run test
         shell: bash
