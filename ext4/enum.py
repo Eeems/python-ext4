@@ -6,7 +6,7 @@ from ctypes import c_uint32
 def TypedEnumerationType(_type):
     class EnumerationType(type(_type)):  # type: ignore
         def __new__(metacls, name, bases, data):
-            if not "_members_" in data:
+            if "_members_" not in data:
                 _members_ = {}
                 for key, value in data.items():
                     if not key.startswith("_"):

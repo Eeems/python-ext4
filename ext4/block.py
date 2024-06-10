@@ -1,8 +1,6 @@
 import io
 import errno
 
-from .extent import Extent
-
 
 class BlockIOBlocks(object):
     def __init__(self, blockio):

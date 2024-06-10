@@ -23,7 +23,6 @@ from .block import BlockIO
 
 from .directory import DirectoryEntry
 from .directory import DirectoryEntry2
-from .directory import DirectoryEntryTail
 from .directory import DirectoryEntryHash
 from .directory import EXT4_DIR_ROUND
 

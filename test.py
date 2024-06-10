@@ -5,6 +5,7 @@ FAILED = False
 
 
 def test_path_tuple(path, expected):
+    global FAILED
     print(f"check Volume.path_tuple({path}): ", end="")
     try:
         t = ext4.Volume.path_tuple(path)

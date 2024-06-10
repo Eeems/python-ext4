@@ -9,16 +9,9 @@ from cachetools import cached
 from cachetools import LRUCache
 
 from .enum import EXT4_INO
-from .enum import MODE
 from .superblock import Superblock
 from .inode import Inode
-from .inode import Fifo
-from .inode import CharacterDevice
 from .inode import Directory
-from .inode import BlockDevice
-from .inode import File
-from .inode import SymbolicLink
-from .inode import Socket
 from .blockdescriptor import BlockDescriptor
 
 
