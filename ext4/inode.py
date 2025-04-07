@@ -1,4 +1,5 @@
 import io
+from typing import final, override
 import warnings
 
 from ctypes import LittleEndianStructure
@@ -39,6 +40,7 @@ class InodeError(Exception):
     pass
 
 
+@final
 class Linux1(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
@@ -46,6 +48,7 @@ class Linux1(LittleEndianStructure):
     ]
 
 
+@final
 class Hurd1(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
@@ -53,6 +56,7 @@ class Hurd1(LittleEndianStructure):
     ]
 
 
+@final
 class Masix1(LittleEndianStructure):
     _pack_ = 1
     # _anonymous_ = ("m_i_reserved1",)
@@ -61,6 +65,7 @@ class Masix1(LittleEndianStructure):
     ]
 
 
+@final
 class Osd1(Union):
     _pack_ = 1
     _fields_ = [
@@ -70,6 +75,7 @@ class Osd1(Union):
     ]
 
 
+@final
 class Linux2(LittleEndianStructure):
     _pack_ = 1
     # _anonymous_ = ("l_i_reserved",)
@@ -83,6 +89,7 @@ class Linux2(LittleEndianStructure):
     ]
 
 
+@final
 class Hurd2(LittleEndianStructure):
     _pack_ = 1
     # _anonymous_ = ("h_i_reserved1",)
@@ -95,6 +102,7 @@ class Hurd2(LittleEndianStructure):
     ]
 
 
+@final
 class Masix2(LittleEndianStructure):
     _pack_ = 1
     # _anonymous_ = ("h_i_reserved1", "m_i_reserved2")
@@ -105,6 +113,7 @@ class Masix2(LittleEndianStructure):
     ]
 
 
+@final
 class Osd2(Union):
     _pack_ = 1
     _fields_ = [
@@ -115,9 +124,10 @@ class Osd2(Union):
 
 
 class Inode(Ext4Struct):
-    EXT4_GOOD_OLD_INODE_SIZE = EXT2_GOOD_OLD_INODE_SIZE = 128
-    _pack_ = 1
-    _fields_ = [
+    EXT2_GOOD_OLD_INODE_SIZE: int = 128
+    EXT4_GOOD_OLD_INODE_SIZE: int = EXT2_GOOD_OLD_INODE_SIZE
+    _pack_: int = 1
+    _fields_: dict[str, any] = [
         ("i_mode", MODE),
         ("i_uid", c_uint16),
         ("i_size_lo", c_uint32),
@@ -147,7 +157,7 @@ class Inode(Ext4Struct):
         ("i_projid", c_uint32),
     ]
 
-    def __new__(cls, volume, offset, i_no):
+    def __new__(cls, volume, offset: int, i_no):
         if cls is not Inode:
             return super().__new__(cls)
 
@@ -201,7 +211,7 @@ class Inode(Ext4Struct):
         return self.superblock.s_inode_size > self.EXT2_GOOD_OLD_INODE_SIZE
 
     @property
-    def fits_in_hi(self):
+    def fits_in_hi(self) -> bool:
         return (
             self.has_hi
             and self.i_checksum_hi.offset + self.i_checksum_hi.size
@@ -209,15 +219,16 @@ class Inode(Ext4Struct):
         )
 
     @property
-    def seed(self):
+    def seed(self) -> int:
         seed = crc32c(self.i_no.to_bytes(4, "little"), self.volume.seed)
         return crc32c(
             self.i_generation.to_bytes(Inode.i_generation.size, "little"),
             seed,
         )
 
+    @override
     @property
-    def checksum(self):
+    def checksum(self) -> int | None:
         if self.superblock.s_creator_os != EXT4_OS.LINUX:
             return None
 
@@ -226,7 +237,7 @@ class Inode(Ext4Struct):
             Inode.osd2.offset + Osd2.linux2.offset + Linux2.l_i_checksum_lo.offset
         )
         checksum_size = Linux2.l_i_checksum_lo.size
-        csum = crc32c(data[:checksum_offset], self.seed)
+        csum: int = crc32c(data[:checksum_offset], self.seed)
         csum = crc32c(b"\0" * checksum_size, csum)
         csum = crc32c(
             data[checksum_offset + checksum_size : self.EXT2_GOOD_OLD_INODE_SIZE],
@@ -247,7 +258,7 @@ class Inode(Ext4Struct):
         return csum
 
     @property
-    def expected_checksum(self):
+    def expected_checksum(self) -> int | None:
         if self.superblock.s_creator_os != EXT4_OS.LINUX:
             return None
 
@@ -258,6 +269,7 @@ class Inode(Ext4Struct):
 
         return provided_csum
 
+    @override
     def validate(self):
         super().validate()
         if self.tree is not None:

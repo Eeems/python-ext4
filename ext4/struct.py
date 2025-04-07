@@ -33,40 +33,40 @@ class Ext4Struct(LittleEndianStructure):
         self.verify()
 
     @classmethod
-    def field_type(cls, name):
+    def field_type(cls, name: str):
         for _name, _type in cls._fields_:
             if name == name:
                 return _type
 
         return None
 
-    def read_from_volume(self):
+    def read_from_volume(self) -> None:
         self.volume.stream.seek(self.offset)
         data = self.volume.stream.read(sizeof(self))
-        memmove(addressof(self), data, sizeof(self))
+        _ = memmove(addressof(self), data, sizeof(self))
 
     @property
-    def size(self):
+    def size(self) -> int:
         return sizeof(self)
 
     @property
-    def magic(self):
+    def magic(self) -> bytes | None:
         return None
 
     @property
-    def expected_magic(self):
+    def expected_magic(self) -> bytes | None:
         return None
 
     @property
-    def checksum(self):
+    def checksum(self) -> int | None:
         return None
 
     @property
-    def expected_checksum(self):
+    def expected_checksum(self) -> int | None:
         return None
 
     @property
-    def ignore_magic(self):
+    def ignore_magic(self) -> bool:
         return self.volume.ignore_magic
 
     def verify(self):
