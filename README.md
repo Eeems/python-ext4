@@ -9,7 +9,7 @@ from ext4 import Volume
 # Extract raw ext4 image
 with open("image.ext4", "rb") as f:
     # Extract specific file
-    volume = Volume(image, offset=0)
+    volume = Volume(f, offset=0)
     inode = volume.inode_at("/etc/version")
     with open("version", "wb") as f:
         f.write(inode.open().read())
