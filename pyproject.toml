@@ -1,6 +1,6 @@
 [project]
 name = "ext4"
-version = "1.0.6"
+version = "1.0.7"
 authors = [
   { name="Eeems", email="eeems@eeems.email" },
 ]
@@ -18,10 +18,16 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: System :: Filesystems",
     "Topic :: Utilities",
 ]
 dynamic = ["dependencies", "readme"]
+
+[project.urls]
+Homepage = "https://github.com/Eeems/python-ext4"
+Repository = "https://github.com/Eeems/python-ext4.git"
+Issues = "https://github.com/Eeems/python-ext4/issues"
 
 [tool.setuptools]
 packages = [
