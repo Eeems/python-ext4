@@ -59,7 +59,13 @@ class BlockIO(io.RawIOBase):
     def block_size(self):
         return self.inode.volume.block_size
 
-    def seek(self, offset, mode=io.SEEK_SET):
+    def readable(self) -> bool:
+        return True
+
+    def seekable(self) -> bool:
+        return True
+
+    def seek(self, offset, mode=io.SEEK_SET) -> int:
         if mode == io.SEEK_CUR:
             offset += self.cursor
 
@@ -73,6 +79,7 @@ class BlockIO(io.RawIOBase):
             raise OSError(errno.EINVAL, "Invalid argument")
 
         self.cursor = offset
+        return offset
 
     def tell(self):
         return self.cursor
