@@ -172,14 +172,14 @@ class Volume(object):
         return self.read(count * block_size)
 
     @staticmethod
-    def path_tuple(path):
+    def path_tuple(path: str | bytes) -> tuple[bytes, ...]:
         if isinstance(path, bytes):
             path = path.decode("utf-8")
 
         return tuple(x.encode("utf-8") for x in PurePosixPath(path).parts[1:])
 
     @cached(cache=LRUCache(maxsize=32))
-    def inode_at(self, path):
+    def inode_at(self, path: str | bytes) -> Inode:
         paths = list(self.path_tuple(path))
         cwd = self.root
         if not paths:
