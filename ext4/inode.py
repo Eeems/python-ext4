@@ -7,6 +7,8 @@ from ctypes import c_uint32
 from ctypes import c_uint16
 from ctypes import sizeof
 
+from ._compat import override
+
 from .struct import Ext4Struct
 from .struct import crc32c
 from .struct import MagicError
@@ -264,7 +266,7 @@ class Inode(Ext4Struct):
             self.tree.validate()
 
     @property
-    def is_inline(self):
+    def is_inline(self) -> bool:
         return (self.i_flags & EXT4_FL.EXTENTS) == 0
 
     @property
@@ -279,7 +281,7 @@ class Inode(Ext4Struct):
     def indices(self):
         return self.tree.indices
 
-    def _open(self, mode="rb", encoding=None, newline=None):
+    def _open(self, mode: str = "rb", encoding: None = None, newline: None = None):
         if mode != "rb" or encoding is not None or newline is not None:
             raise NotImplementedError()
 
@@ -339,7 +341,10 @@ class Socket(Inode):
 
 
 class File(Inode):
-    def open(self, mode="rb", encoding=None, newline=None):
+    @override
+    def open(
+        self, mode: str = "rb", encoding: None = None, newline: None = None
+    ) -> io.BytesIO | BlockIO:
         return self._open(mode, encoding, newline)
 
 

@@ -1,6 +1,8 @@
 import io
 import errno
 
+from ._compat import override
+
 
 class BlockIOBlocks(object):
     def __init__(self, blockio):
@@ -45,8 +47,8 @@ class BlockIO(io.RawIOBase):
     def __init__(self, inode):
         super().__init__()
         self.inode = inode
-        self.cursor = 0
-        self.blocks = BlockIOBlocks(self)
+        self.cursor: int = 0
+        self.blocks: BlockIOBlocks = BlockIOBlocks(self)
 
     def __len__(self):
         return self.inode.i_size
@@ -56,10 +58,19 @@ class BlockIO(io.RawIOBase):
         return self.inode.extents
 
     @property
-    def block_size(self):
+    def block_size(self) -> int:
         return self.inode.volume.block_size
 
-    def seek(self, offset, mode=io.SEEK_SET):
+    @override
+    def readable(self) -> bool:
+        return True
+
+    @override
+    def seekable(self) -> bool:
+        return True
+
+    @override
+    def seek(self, offset: int, mode: int = io.SEEK_SET) -> int:
         if mode == io.SEEK_CUR:
             offset += self.cursor
 
@@ -73,11 +84,14 @@ class BlockIO(io.RawIOBase):
             raise OSError(errno.EINVAL, "Invalid argument")
 
         self.cursor = offset
+        return offset
 
-    def tell(self):
+    @override
+    def tell(self) -> int:
         return self.cursor
 
-    def read(self, size=-1):
+    @override
+    def read(self, size: int = -1) -> bytes:
         if size < 0:
             size = len(self) - self.cursor
 
@@ -88,7 +102,7 @@ class BlockIO(io.RawIOBase):
 
         return data
 
-    def peek(self, size=0):
+    def peek(self, size: int = 0) -> bytes:
         if self.cursor >= len(self):
             return b""
 
