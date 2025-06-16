@@ -1,2 +1,2 @@
-cachetools~=5.3
-crcmod~=1.7
+cachetools==5.3.2
+crcmod==1.7
