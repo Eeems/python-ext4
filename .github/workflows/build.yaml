@@ -9,9 +9,30 @@ on:
     types: [released]
 permissions: read-all
 jobs:
+  test-image:
+    name: Generate test ext4 image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate test.ext4
+        shell: bash
+        run: |
+          set -e
+          mkdir test
+          echo "hello world" > test/test.txt
+          for i in {1..100};do
+            echo "hello world" >> test/test.txt
+          done
+          dd if=/dev/zero of=test.ext4 count=1024 bs=1024
+          mkfs.ext4 test.ext4 -d test
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test.ext4
+          path: test.ext4
+          if-no-files-found: error
   test:
     name: Test on ${{ matrix.os }} python ${{ matrix.python }}
     runs-on: ${{ matrix.os }}
+    needs: [test-image]
     strategy:
       fail-fast: false
       matrix:
@@ -20,17 +41,22 @@ jobs:
           - windows-latest
           - macos-latest
         python:
-          - '3.11'
-          - '3.12'
-          - '3.13'
+          - "3.11"
+          - "3.12"
+          - "3.13"
     steps:
       - name: Checkout the Git repository
         uses: actions/checkout@v4
+      - name: Download test.ext4
+        uses: actions/download-artifact@v4
+        with:
+          name: test.ext4
+          path: .
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-          cache: 'pip'
+          cache: "pip"
       - name: Run test
         shell: bash
         run: ./test.sh
@@ -44,8 +70,8 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          python-version: "3.11"
+          cache: "pip"
       - name: Install build tool
         run: pip install build
       - name: Building package
@@ -94,8 +120,7 @@ jobs:
           name: pip
           path: dist
       - name: Upload to release
-        run:
-          find . -type f | xargs -rI {} gh release upload "$TAG" {} --clobber
+        run: find . -type f | xargs -rI {} gh release upload "$TAG" {} --clobber
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name }}
