@@ -41,8 +41,8 @@ class Ext4Struct(LittleEndianStructure):
         return None
 
     def read_from_volume(self):
-        self.volume.stream.seek(self.offset)
-        data = self.volume.stream.read(sizeof(self))
+        self.volume.seek(self.offset)
+        data = self.volume.read(sizeof(self))
         memmove(addressof(self), data, sizeof(self))
 
     @property
