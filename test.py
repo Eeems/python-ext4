@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 import ext4
 
@@ -43,9 +44,26 @@ test_path_tuple(b"/test", (b"test",))
 test_path_tuple("/test/test", (b"test", b"test"))
 test_path_tuple(b"/test/test", (b"test", b"test"))
 
+offset = os.path.getsize("test.ext4") - os.path.getsize("test.ext4.tmp")
+_assert("offset > 0")
 with open("test.ext4", "rb") as f:
+    try:
+        print("check MagicError: ", end="")
+        _ = ext4.Volume(f, offset=0)
+        FAILED = True
+        print("fail")
+        print("  MagicError not raised")
+    except ext4.struct.MagicError:
+        print("pass")
+
+    except Exception as e:
+        FAILED = True
+        print("fail")
+        print("  ", end="")
+        print(e)
+
     # Extract specific file
-    volume = ext4.Volume(f, offset=0)
+    volume = ext4.Volume(f, offset=offset)
     inode = cast(ext4.File, volume.inode_at("/test.txt"))
     _assert("isinstance(inode, ext4.File)")
     b = inode.open()

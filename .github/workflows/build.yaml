@@ -22,12 +22,16 @@ jobs:
           for i in {1..100};do
             echo "hello world" >> test/test.txt
           done
-          dd if=/dev/zero of=test.ext4 count=1024 bs=1024
-          mkfs.ext4 test.ext4 -d test
+          dd if=/dev/zero of=test.ext4.tmp count=1024 bs=1024
+          mkfs.ext4 test.ext4.tmp -d test
+          echo -n F > test.ext4
+          cat test.ext4.tmp >> test.ext4
       - uses: actions/upload-artifact@v4
         with:
           name: test.ext4
-          path: test.ext4
+          path: |
+            test.ext4
+            test.ext4.tmp
           if-no-files-found: error
   test:
     name: Test on ${{ matrix.os }} python ${{ matrix.python }}
