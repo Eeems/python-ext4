@@ -20,7 +20,7 @@ class DirectoryEntryStruct(Ext4Struct):
         super().__init__(directory.volume, offset)
 
     def read_from_volume(self):
-        data = self.directory._open().read()[self.offset : self.offset + self.size]
+        data = self.directory._open().read()[self.offset:self.offset + self.size]
         memmove(addressof(self), data, self.size)
 
 

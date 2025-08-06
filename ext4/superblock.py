@@ -76,6 +76,7 @@ class Superblock(Ext4Struct):
         ("s_desc_size", c_uint16),
         ("s_default_mount_opts", EXT4_DEFM),
         ("s_first_meta_bg", c_uint32),
+        ("s_mkfs_time", c_uint32),
         ("s_jnl_blocks", c_uint32 * 17),
         ("s_blocks_count_hi", c_uint32),
         ("s_r_blocks_count_hi", c_uint32),
@@ -110,7 +111,7 @@ class Superblock(Ext4Struct):
         ("s_usr_quota_inum", c_uint32),
         ("s_grp_quota_inum", c_uint32),
         ("s_overhead_blocks", c_uint32),
-        ("s_backup_bgs", c_uint32),
+        ("s_backup_bgs", c_uint32 * 2),
         ("s_encrypt_algos", FS_ENCRYPTION_MODE * 4),
         ("s_encrypt_pw_salt", c_uint8 * 16),
         ("s_lpf_ino", c_uint32),
@@ -183,3 +184,10 @@ class Superblock(Ext4Struct):
             return self.s_checksum_seed
 
         return crc32c(bytes(self.s_uuid))
+
+    @property
+    def desc_size(self):
+        if self.s_feature_incompat & EXT4_FEATURE_INCOMPAT.IS64BIT != 0:
+            return self.s_desc_size
+        else:
+            return 32

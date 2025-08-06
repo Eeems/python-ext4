@@ -83,7 +83,7 @@ class Volume(object):
         ):
             descriptor = BlockDescriptor(
                 self,
-                table_offset + (index * self.superblock.s_desc_size),
+                table_offset + (index * self.superblock.desc_size),
                 index,
             )
             descriptor.verify()

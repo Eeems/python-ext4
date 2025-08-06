@@ -32,7 +32,7 @@ from .directory import EXT4_DIR_ROUND
 
 from .htree import DXRoot
 
-from .xattr import ExtendedAttributeIBodyHeader
+from .xattr import ExtendedAttributeIBodyHeader, ExtendedAttributeHeader
 
 
 class OpenDirectoryError(Exception):
@@ -233,12 +233,12 @@ class Inode(Ext4Struct):
         csum = crc32c(data[:checksum_offset], self.seed)
         csum = crc32c(b"\0" * checksum_size, csum)
         csum = crc32c(
-            data[checksum_offset + checksum_size : self.EXT2_GOOD_OLD_INODE_SIZE],
+            data[checksum_offset + checksum_size:self.EXT2_GOOD_OLD_INODE_SIZE],
             csum,
         )
         if self.has_hi:
             offset = Inode.i_checksum_hi.offset
-            csum = crc32c(data[self.EXT2_GOOD_OLD_INODE_SIZE : offset], csum)
+            csum = crc32c(data[self.EXT2_GOOD_OLD_INODE_SIZE:offset], csum)
             if self.fits_in_hi:
                 csum = crc32c(b"\0" * Inode.i_checksum_hi.size, csum)
                 offset += Inode.i_checksum_hi.size
@@ -300,7 +300,7 @@ class Inode(Ext4Struct):
     @property
     def xattrs(self):
         inline_offset = self.offset + self.EXT2_GOOD_OLD_INODE_SIZE + self.i_extra_isize
-        inline_size = self.superblock.s_inode_size - inline_offset
+        inline_size = self.offset + self.superblock.s_inode_size - inline_offset
         if inline_size > sizeof(ExtendedAttributeIBodyHeader):
             try:
                 header = ExtendedAttributeIBodyHeader(self, inline_offset, inline_size)
@@ -312,9 +312,9 @@ class Inode(Ext4Struct):
                 pass
 
         if self.i_file_acl != 0:
-            block_offset = self.i_file_acl * self.block_size
+            block_offset = self.i_file_acl * self.volume.block_size
             try:
-                header = ExtendedAttributeIBodyHeader(
+                header = ExtendedAttributeHeader(
                     self, block_offset, self.volume.block_size
                 )
                 header.verify()
