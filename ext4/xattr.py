@@ -7,7 +7,8 @@ from ctypes import sizeof
 
 from .struct import Ext4Struct
 from .struct import crc32c
-from .enum import EXT4_FL, EXT4_FEATURE_INCOMPAT
+from .enum import EXT4_FL
+from .enum import EXT4_FEATURE_INCOMPAT
 
 
 class ExtendedAttributeError(Exception):
