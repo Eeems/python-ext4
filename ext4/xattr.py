@@ -15,10 +15,8 @@ class ExtendedAttributeError(Exception):
 
 
 class ExtendedAttributeBase(Ext4Struct):
-    def __init__(self, inode, offset, size=None):
+    def __init__(self, inode, offset, size):
         self.inode = inode
-        if size is None:
-            size = self.size
         self.data_size = size
         super().__init__(inode.volume, offset)
 
@@ -49,7 +47,7 @@ class ExtendedAttributeIBodyHeader(ExtendedAttributeBase):
         offset = self.offset + (4 * ((sizeof(self) + 3) // 4))
         i = 0
         while i < self.data_size:
-            entry = ExtendedAttributeEntry(self.inode, offset + i)
+            entry = ExtendedAttributeEntry(self.inode, offset + i, self.data_size - i)
             if (
                 entry.e_name_len
                 | entry.e_name_index
