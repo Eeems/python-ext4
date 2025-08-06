@@ -32,7 +32,8 @@ from .directory import EXT4_DIR_ROUND
 
 from .htree import DXRoot
 
-from .xattr import ExtendedAttributeIBodyHeader, ExtendedAttributeHeader
+from .xattr import ExtendedAttributeIBodyHeader
+from .xattr import ExtendedAttributeHeader
 
 
 class OpenDirectoryError(Exception):
