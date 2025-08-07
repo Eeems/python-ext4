@@ -13,19 +13,13 @@ jobs:
     name: Generate test ext4 image
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout the Git repository
+        uses: actions/checkout@v4
       - name: Generate test.ext4
         shell: bash
         run: |
           set -e
-          mkdir test
-          echo "hello world" > test/test.txt
-          for i in {1..100};do
-            echo "hello world" >> test/test.txt
-          done
-          dd if=/dev/zero of=test.ext4.tmp count=1024 bs=1024
-          mkfs.ext4 test.ext4.tmp -d test
-          echo -n F > test.ext4
-          cat test.ext4.tmp >> test.ext4
+          ./_test_image.sh
       - uses: actions/upload-artifact@v4
         with:
           name: test.ext4
