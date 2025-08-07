@@ -161,10 +161,12 @@ class ExtendedAttributeEntry(ExtendedAttributeBase):
         if 0 > name_index or name_index >= len(
             ExtendedAttributeEntry.NAME_INDICES
         ):
-            warnings.warn(
-                f"Unknown attribute prefix {self.e_name_index:d}"
-            )
-            name_index = 0
+            msg = f"Unknown attribute prefix {self.e_name_index:d}"
+            if self.volume.ignore_attr_name_index:
+                warnings.warn(msg, RuntimeWarning)
+                name_index = 0
+            else:
+                raise ExtendedAttributeError(msg)
 
         return ExtendedAttributeEntry.NAME_INDICES[
             name_index
