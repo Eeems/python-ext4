@@ -194,6 +194,10 @@ class Inode(Ext4Struct):
         return self.volume.superblock
 
     @property
+    def block_size(self):
+        return self.volume.block_size
+
+    @property
     def i_size(self):
         return self.i_size_high << 32 | self.i_size_lo
 
@@ -313,10 +317,10 @@ class Inode(Ext4Struct):
                 pass
 
         if self.i_file_acl != 0:
-            block_offset = self.i_file_acl * self.volume.block_size
+            block_offset = self.i_file_acl * self.block_size
             try:
                 header = ExtendedAttributeHeader(
-                    self, block_offset, self.volume.block_size
+                    self, block_offset, self.block_size
                 )
                 header.verify()
                 for name, value in header:
@@ -370,14 +374,6 @@ class Directory(Inode):
     def validate(self):
         super().validate()
         # TODO validate each directory entry block with DirectoryEntryTail
-
-    @property
-    def superblock(self):
-        return self.volume.superblock
-
-    @property
-    def block_size(self):
-        return self.volume.block_size
 
     @property
     def has_filetype(self):
