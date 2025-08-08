@@ -9,9 +9,13 @@ for i in {1..100};do
     setfattr -n user.name$j -v value${i}_$j "$tmp_dir"/test$i.txt
   done
 done
-trap "rm -r test.ext4{,.tmp}" EXIT
-dd if=/dev/zero of=test.ext4.tmp count=20 bs=1048576
-mkfs.ext4 -g 1024 test.ext4.tmp -d "$tmp_dir"
+trap "rm -r test{32,64}.ext4{,.tmp}" EXIT
+dd if=/dev/zero of=test32.ext4.tmp count=20 bs=1048576
+dd if=/dev/zero of=test64.ext4.tmp count=20 bs=1048576
+mkfs.ext4 -g 1024 -O 64bit test64.ext4.tmp -d "$tmp_dir"
+mkfs.ext4 -g 1024 -O ^64bit test32.ext4.tmp -d "$tmp_dir"
 trap "rm -r \"$tmp_dir\"" EXIT
-echo -n F > test.ext4
-cat test.ext4.tmp >> test.ext4
+echo -n F > test32.ext4
+cat test32.ext4.tmp >> test32.ext4
+echo -n F > test64.ext4
+cat test64.ext4.tmp >> test64.ext4
