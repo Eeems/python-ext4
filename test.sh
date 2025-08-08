@@ -15,6 +15,5 @@ python -m pip install \
   -r requirements.txt
 if ! [ -f test.ext4 ] || ! [ -f test.ext4.tmp ];then
   ./_test_image.sh
-  trap "rm -f test.ext4{,.tmp}" EXIT
 fi
 python test.py

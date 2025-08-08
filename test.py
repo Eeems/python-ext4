@@ -73,6 +73,13 @@ with open("test.ext4", "rb") as f:
     _assert("b.seek(1) == 1")
     _assert("b.seek(0) == 0")
     _assert("b.seek(10) == 10")
+    for i in range(1, 101):
+        inode = volume.inode_at(f"/test{i}.txt")
+        attrs = {k: v for k, v in inode.xattrs}
+        for j in range(1, 21):
+            _assert(f'attrs["user.name{j}"] == b"value{i}_{j}"')
+        data = inode.open().read()
+        _assert(f'data == b"hello world{i}\\n"')
 
 if FAILED:
     sys.exit(1)

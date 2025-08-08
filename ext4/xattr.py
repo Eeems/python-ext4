@@ -42,7 +42,7 @@ class ExtendedAttributeIBodyHeader(ExtendedAttributeBase):
         return 0xEA020000
 
     def value_offset(self, entry):
-        return entry.offset + entry.e_value_offs
+        return self.offset + sizeof(self) + entry.e_value_offs
 
     def __iter__(self):
         offset = self.offset + (4 * ((sizeof(self) + 3) // 4))
