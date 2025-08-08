@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
-python -m venv .venv
+if ! [ -d .venv ];then
+  python -m venv .venv
+fi
 if [ -f .venv/Scripts/activate ]; then
   . .venv/Scripts/activate
 elif [ -f .venv/bin/activate ]; then
