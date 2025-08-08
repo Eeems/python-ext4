@@ -27,7 +27,7 @@ class DotDirectoryEntry2(LittleEndianStructure):
         if self.name in (b".\0\0\0", b".\0\0\0"):
             return
 
-        message = f"{self} dot or dotdot entry name invalid! " f"actual={self.name}"
+        message = f"{self} dot or dotdot entry name invalid! actual={self.name}"
         if not self.ignore_magic:
             raise MagicError(message)
 
