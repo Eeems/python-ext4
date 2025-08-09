@@ -61,6 +61,7 @@ class Volume(object):
         ignore_flags=False,
         ignore_magic=False,
         ignore_checksum=False,
+        ignore_attr_name_index=False,
     ):
         if not isinstance(stream, io.RawIOBase) and not isinstance(
             stream, io.BufferedIOBase
@@ -73,6 +74,7 @@ class Volume(object):
         self.ignore_flags = ignore_flags
         self.ignore_magic = ignore_magic
         self.ignore_checksum = ignore_checksum
+        self.ignore_attr_name_index = ignore_attr_name_index
         self.superblock = Superblock(self)
         self.superblock.verify()
         self.group_descriptors = []
@@ -83,7 +85,7 @@ class Volume(object):
         ):
             descriptor = BlockDescriptor(
                 self,
-                table_offset + (index * self.superblock.s_desc_size),
+                table_offset + (index * self.superblock.desc_size),
                 index,
             )
             descriptor.verify()
