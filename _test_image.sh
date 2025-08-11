@@ -6,7 +6,7 @@ trap "rm -r \"$tmp_dir\"" EXIT
 echo "hello world" > "$tmp_dir"/test.txt
 for i in {1..100};do
   echo "hello world" >> "$tmp_dir"/test.txt
-  echo "hello world$i" >> "$tmp_dir"/test$i.txt
+  echo "hello world$i" > "$tmp_dir"/test$i.txt
   for j in {1..20};do
     setfattr -n user.name$j -v value${i}_$j "$tmp_dir"/test$i.txt
   done
