@@ -24,8 +24,10 @@ jobs:
         with:
           name: test.ext4
           path: |
-            test.ext4
-            test.ext4.tmp
+            test32.ext4
+            test32.ext4.tmp
+            test64.ext4
+            test64.ext4.tmp
           if-no-files-found: error
   test:
     name: Test on ${{ matrix.os }} python ${{ matrix.python }}
@@ -50,7 +52,7 @@ jobs:
       - name: Download test.ext4
         uses: actions/download-artifact@v4
         with:
-          name: test.ext4
+          pattern: test*
           path: .
       - name: Setup Python
         uses: actions/setup-python@v5
