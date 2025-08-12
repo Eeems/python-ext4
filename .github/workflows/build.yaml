@@ -52,7 +52,7 @@ jobs:
       - name: Download test.ext4
         uses: actions/download-artifact@v4
         with:
-          pattern: test*
+          name: test.ext4
           merge-multiple: true
           path: .
       - name: Setup Python
