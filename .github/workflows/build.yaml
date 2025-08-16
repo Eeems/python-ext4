@@ -29,6 +29,11 @@ jobs:
     steps:
       - name: Checkout the Git repository
         uses: actions/checkout@v4
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -e
+          sudo apt-get install -y attr
       - name: Generate test.ext4
         shell: bash
         run: |
@@ -38,8 +43,10 @@ jobs:
         with:
           name: test.ext4
           path: |
-            test.ext4
-            test.ext4.tmp
+            test32.ext4
+            test32.ext4.tmp
+            test64.ext4
+            test64.ext4.tmp
           if-no-files-found: error
   test:
     name: Test on ${{ matrix.os }} python ${{ matrix.python }}

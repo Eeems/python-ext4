@@ -33,6 +33,7 @@ from .directory import EXT4_DIR_ROUND
 from .htree import DXRoot
 
 from .xattr import ExtendedAttributeIBodyHeader
+from .xattr import ExtendedAttributeHeader
 
 
 class OpenDirectoryError(Exception):
@@ -193,6 +194,10 @@ class Inode(Ext4Struct):
         return self.volume.superblock
 
     @property
+    def block_size(self):
+        return self.volume.block_size
+
+    @property
     def i_size(self):
         return self.i_size_high << 32 | self.i_size_lo
 
@@ -300,7 +305,7 @@ class Inode(Ext4Struct):
     @property
     def xattrs(self):
         inline_offset = self.offset + self.EXT2_GOOD_OLD_INODE_SIZE + self.i_extra_isize
-        inline_size = self.superblock.s_inode_size - inline_offset
+        inline_size = self.offset + self.superblock.s_inode_size - inline_offset
         if inline_size > sizeof(ExtendedAttributeIBodyHeader):
             try:
                 header = ExtendedAttributeIBodyHeader(self, inline_offset, inline_size)
@@ -314,9 +319,7 @@ class Inode(Ext4Struct):
         if self.i_file_acl != 0:
             block_offset = self.i_file_acl * self.block_size
             try:
-                header = ExtendedAttributeIBodyHeader(
-                    self, block_offset, self.volume.block_size
-                )
+                header = ExtendedAttributeHeader(self, block_offset, self.block_size)
                 header.verify()
                 for name, value in header:
                     yield name, value
@@ -369,14 +372,6 @@ class Directory(Inode):
     def validate(self):
         super().validate()
         # TODO validate each directory entry block with DirectoryEntryTail
-
-    @property
-    def superblock(self):
-        return self.volume.superblock
-
-    @property
-    def block_size(self):
-        return self.volume.block_size
 
     @property
     def has_filetype(self):

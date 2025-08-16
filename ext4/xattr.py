@@ -1,3 +1,4 @@
+from typing import override
 import warnings
 
 from ctypes import c_uint32
@@ -8,6 +9,7 @@ from ctypes import sizeof
 from .struct import Ext4Struct
 from .struct import crc32c
 from .enum import EXT4_FL
+from .enum import EXT4_FEATURE_INCOMPAT
 
 
 class ExtendedAttributeError(Exception):
@@ -40,21 +42,24 @@ class ExtendedAttributeIBodyHeader(ExtendedAttributeBase):
     def expected_magic(self):
         return 0xEA020000
 
+    def value_offset(self, entry):
+        return self.offset + sizeof(self) + entry.e_value_offs
+
     def __iter__(self):
         offset = self.offset + (4 * ((sizeof(self) + 3) // 4))
         i = 0
         while i < self.data_size:
-            entry = ExtendedAttributeEntry(offset + i)
+            entry = ExtendedAttributeEntry(self.inode, offset + i, self.data_size - i)
             if (
                 entry.e_name_len
                 | entry.e_name_index
                 | entry.e_value_offs
-                | entry.e_value_inum
+                | entry.value_inum
             ) == 0:
                 break
 
-            if entry.e_value_inum != 0:
-                inode = self.volue.inodes[entry.e_value_inum]
+            if entry.value_inum != 0:
+                inode = self.volume.inodes[entry.value_inum]
                 if (inode.i_flags & EXT4_FL.EA_INODE) != 0:
                     message = f"Inode {inode.i_no:d} is not marked as large extended attribute value"
                     if not self.volume.ignore_flags:
@@ -64,12 +69,18 @@ class ExtendedAttributeIBodyHeader(ExtendedAttributeBase):
                 # TODO determine if e_value_size or i_size are required to limit results?
                 value = inode.open().read()
 
+            elif entry.e_value_size != 0:
+                value_offset = self.value_offset(entry)
+                if value_offset + entry.e_value_size > self.offset + self.data_size:
+                    value = b""
+                else:
+                    self.volume.seek(value_offset)
+                    value = self.volume.read(entry.e_value_size)
             else:
-                self.volume.seek(offset + i + entry.e_value_offs)
-                self.volume.read(entry.e_value_size)
+                value = b""
 
             yield entry.name_str, value
-            i += (entry.size + 3) // 4
+            i += 4 * ((entry.size + 3) // 4)
 
 
 class ExtendedAttributeHeader(ExtendedAttributeIBodyHeader):
@@ -80,7 +91,7 @@ class ExtendedAttributeHeader(ExtendedAttributeIBodyHeader):
         ("h_blocks", c_uint32),
         ("h_hash", c_uint32),
         ("h_checksum", c_uint32),
-        ("h_reserved", c_uint32 * 2),
+        ("h_reserved", c_uint32 * 3),
     ]
 
     def verify(self):
@@ -90,6 +101,10 @@ class ExtendedAttributeHeader(ExtendedAttributeIBodyHeader):
                 f"Invalid number of xattr blocks at offset 0x{self.offset:X} of inode "
                 f"{self.inode.i_no:d}: {self.h_blocks:d} (expected 1)"
             )
+
+    @override
+    def value_offset(self, entry):
+        return self.offset + entry.e_value_offs
 
     @property
     def expected_checksum(self):
@@ -117,6 +132,7 @@ class ExtendedAttributeEntry(ExtendedAttributeBase):
         "system.posix_acl_access",
         "system.posix_acl_default",
         "trusted.",
+        "",
         "security.",
         "system.",
         "system.richacl",
@@ -143,13 +159,24 @@ class ExtendedAttributeEntry(ExtendedAttributeBase):
 
     @property
     def name_str(self):
-        if 0 > self.e_name_index or self.e_name_index > len(
-            ExtendedAttributeEntry.NAME_INDICES
-        ):
-            raise ExtendedAttributeError(
-                f"Unknown attribute prefix {self.e_name_index:d}"
-            )
+        name_index = self.e_name_index
+        if 0 > name_index or name_index >= len(ExtendedAttributeEntry.NAME_INDICES):
+            msg = f"Unknown attribute prefix {self.e_name_index:d}"
+            if self.volume.ignore_attr_name_index:
+                warnings.warn(msg, RuntimeWarning)
+                name_index = 0
+            else:
+                raise ExtendedAttributeError(msg)
 
-        return ExtendedAttributeEntry.NAME_INDICES[
-            self.e_name_index
-        ] + self.e_name.decode("iso-8859-2")
+        return ExtendedAttributeEntry.NAME_INDICES[name_index] + self.e_name.decode(
+            "iso-8859-2"
+        )
+
+    @property
+    def value_inum(self):
+        if (
+            self.volume.superblock.s_feature_incompat & EXT4_FEATURE_INCOMPAT.EA_INODE
+        ) != 0:
+            return self.e_value_inum
+        else:
+            return 0
