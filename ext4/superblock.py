@@ -125,11 +125,11 @@ class Superblock(Ext4Struct):
         super().__init__(volume, 0x400)
 
     @property
-    def has_hi(self):
+    def has_hi(self) -> bool:
         return (self.s_feature_incompat & EXT4_FEATURE_INCOMPAT.IS64BIT) != 0
 
     @property
-    def s_blocks_count(self):
+    def s_blocks_count(self) -> int:
         return (
             (self.s_blocks_per_group) * len(self.volume.group_descriptors)
             - self.s_reserved_gdt_blocks
@@ -158,19 +158,19 @@ class Superblock(Ext4Struct):
     def metadata_csum(self):
         return self.s_feature_ro_compat & EXT4_FEATURE_RO_COMPAT.METADATA_CSUM != 0
 
-    @property
+    @Ext4Struct.expected_magic.getter
     def expected_magic(self):
         return 0xEF53
 
-    @property
+    @Ext4Struct.magic.getter
     def magic(self):
         return self.s_magic
 
-    @property
+    @Ext4Struct.expected_checksum.getter
     def expected_checksum(self):
         return self.s_checksum if self.metadata_csum else None
 
-    @property
+    @Ext4Struct.checksum.getter
     def checksum(self):
         return (
             crc32c(bytes(self)[: Superblock.s_checksum.offset])
