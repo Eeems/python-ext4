@@ -1,3 +1,4 @@
+from typing import override
 import warnings
 
 from ctypes import c_uint32
@@ -101,6 +102,7 @@ class ExtendedAttributeHeader(ExtendedAttributeIBodyHeader):
                 f"{self.inode.i_no:d}: {self.h_blocks:d} (expected 1)"
             )
 
+    @override
     def value_offset(self, entry):
         return self.offset + entry.e_value_offs
 
