@@ -53,7 +53,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: test.ext4
-          merge-multiple: true
           path: .
       - name: Setup Python
         uses: actions/setup-python@v5
