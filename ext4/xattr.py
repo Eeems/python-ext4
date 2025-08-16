@@ -5,6 +5,8 @@ from ctypes import c_uint16
 from ctypes import c_uint8
 from ctypes import sizeof
 
+from collections.abc import Generator
+
 from .struct import Ext4Struct
 from .struct import crc32c
 from .enum import EXT4_FL
@@ -30,22 +32,22 @@ class ExtendedAttributeIBodyHeader(ExtendedAttributeBase):
         ("h_magic", c_uint32),  # 0xEA020000
     ]
 
-    @property
+    @ExtendedAttributeBase.ignore_magic.getter
     def ignore_magic(self):
         return False
 
-    @property
+    @ExtendedAttributeBase.magic.getter
     def magic(self):
         return self.h_magic
 
-    @property
+    @ExtendedAttributeBase.expected_magic.getter
     def expected_magic(self):
         return 0xEA020000
 
     def value_offset(self, entry):
         return self.offset + sizeof(self) + entry.e_value_offs
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[tuple[str, bytes], None, None]:
         offset = self.offset + (4 * ((sizeof(self) + 3) // 4))
         i = 0
         while i < self.data_size:
@@ -58,6 +60,7 @@ class ExtendedAttributeIBodyHeader(ExtendedAttributeBase):
             ) == 0:
                 break
 
+            value: bytes
             if entry.value_inum != 0:
                 inode = self.volume.inodes[entry.value_inum]
                 if (inode.i_flags & EXT4_FL.EA_INODE) != 0:
@@ -74,7 +77,7 @@ class ExtendedAttributeIBodyHeader(ExtendedAttributeBase):
                 if value_offset + entry.e_value_size > self.offset + self.data_size:
                     value = b""
                 else:
-                    self.volume.seek(value_offset)
+                    _ = self.volume.seek(value_offset)
                     value = self.volume.read(entry.e_value_size)
             else:
                 value = b""
@@ -94,26 +97,27 @@ class ExtendedAttributeHeader(ExtendedAttributeIBodyHeader):
         ("h_reserved", c_uint32 * 3),
     ]
 
+    @override
     def verify(self):
         super().verify()
         if self.h_blocks != 1:
             raise ExtendedAttributeError(
                 f"Invalid number of xattr blocks at offset 0x{self.offset:X} of inode "
-                f"{self.inode.i_no:d}: {self.h_blocks:d} (expected 1)"
+                + f"{self.inode.i_no:d}: {self.h_blocks:d} (expected 1)"
             )
 
     @override
     def value_offset(self, entry):
         return self.offset + entry.e_value_offs
 
-    @property
+    @ExtendedAttributeIBodyHeader.expected_checksum.getter
     def expected_checksum(self):
         if not self.h_checksum:
             return None
 
         return self.h_checksum
 
-    @property
+    @ExtendedAttributeIBodyHeader.checksum.getter
     def checksum(self):
         if not self.h_checksum:
             return None
@@ -149,16 +153,17 @@ class ExtendedAttributeEntry(ExtendedAttributeBase):
         # ("e_name", c_char * self.e_name_len),
     ]
 
+    @override
     def read_from_volume(self):
         super().read_from_volume()
-        self.e_name = self.volume.stream.read(self.e_name_len)
+        self.e_name: bytes = self.volume.stream.read(self.e_name_len)
 
-    @property
+    @ExtendedAttributeBase.size.getter
     def size(self):
         return sizeof(self) + self.e_name_len
 
     @property
-    def name_str(self):
+    def name_str(self) -> str:
         name_index = self.e_name_index
         if 0 > name_index or name_index >= len(ExtendedAttributeEntry.NAME_INDICES):
             msg = f"Unknown attribute prefix {self.e_name_index:d}"
@@ -174,9 +179,12 @@ class ExtendedAttributeEntry(ExtendedAttributeBase):
 
     @property
     def value_inum(self):
-        if (
-            self.volume.superblock.s_feature_incompat & EXT4_FEATURE_INCOMPAT.EA_INODE
-        ) != 0:
-            return self.e_value_inum
-        else:
-            return 0
+        return (
+            self.e_value_inum
+            if (
+                self.volume.superblock.s_feature_incompat
+                & EXT4_FEATURE_INCOMPAT.EA_INODE
+            )
+            != 0
+            else 0
+        )
