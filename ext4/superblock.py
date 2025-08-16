@@ -189,5 +189,5 @@ class Superblock(Ext4Struct):
     def desc_size(self):
         if self.s_feature_incompat & EXT4_FEATURE_INCOMPAT.IS64BIT != 0:
             return self.s_desc_size
-        else:
-            return 32
+
+        return 32

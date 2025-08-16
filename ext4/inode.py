@@ -238,12 +238,12 @@ class Inode(Ext4Struct):
         csum = crc32c(data[:checksum_offset], self.seed)
         csum = crc32c(b"\0" * checksum_size, csum)
         csum = crc32c(
-            data[checksum_offset + checksum_size:self.EXT2_GOOD_OLD_INODE_SIZE],
+            data[checksum_offset + checksum_size : self.EXT2_GOOD_OLD_INODE_SIZE],
             csum,
         )
         if self.has_hi:
             offset = Inode.i_checksum_hi.offset
-            csum = crc32c(data[self.EXT2_GOOD_OLD_INODE_SIZE:offset], csum)
+            csum = crc32c(data[self.EXT2_GOOD_OLD_INODE_SIZE : offset], csum)
             if self.fits_in_hi:
                 csum = crc32c(b"\0" * Inode.i_checksum_hi.size, csum)
                 offset += Inode.i_checksum_hi.size
@@ -319,9 +319,7 @@ class Inode(Ext4Struct):
         if self.i_file_acl != 0:
             block_offset = self.i_file_acl * self.block_size
             try:
-                header = ExtendedAttributeHeader(
-                    self, block_offset, self.block_size
-                )
+                header = ExtendedAttributeHeader(self, block_offset, self.block_size)
                 header.verify()
                 for name, value in header:
                     yield name, value

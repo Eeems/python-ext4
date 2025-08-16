@@ -120,7 +120,7 @@ class BlockDescriptor(Ext4Struct):
         if self.volume.has_hi:
             csum = crc32c(b"\x00\x00", csum)
             csum = crc32c(
-                bytes(self)[BlockDescriptor.bg_block_bitmap_hi.offset:], csum
+                bytes(self)[BlockDescriptor.bg_block_bitmap_hi.offset :], csum
             )
         return csum & 0xFFFF
 

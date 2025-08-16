@@ -158,9 +158,7 @@ class ExtendedAttributeEntry(ExtendedAttributeBase):
     @property
     def name_str(self):
         name_index = self.e_name_index
-        if 0 > name_index or name_index >= len(
-            ExtendedAttributeEntry.NAME_INDICES
-        ):
+        if 0 > name_index or name_index >= len(ExtendedAttributeEntry.NAME_INDICES):
             msg = f"Unknown attribute prefix {self.e_name_index:d}"
             if self.volume.ignore_attr_name_index:
                 warnings.warn(msg, RuntimeWarning)
@@ -168,13 +166,15 @@ class ExtendedAttributeEntry(ExtendedAttributeBase):
             else:
                 raise ExtendedAttributeError(msg)
 
-        return ExtendedAttributeEntry.NAME_INDICES[
-            name_index
-        ] + self.e_name.decode("iso-8859-2")
+        return ExtendedAttributeEntry.NAME_INDICES[name_index] + self.e_name.decode(
+            "iso-8859-2"
+        )
 
     @property
     def value_inum(self):
-        if (self.volume.superblock.s_feature_incompat & EXT4_FEATURE_INCOMPAT.EA_INODE) != 0:
+        if (
+            self.volume.superblock.s_feature_incompat & EXT4_FEATURE_INCOMPAT.EA_INODE
+        ) != 0:
             return self.e_value_inum
         else:
             return 0
