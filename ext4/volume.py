@@ -35,13 +35,13 @@ class Inodes(object):
         return self.volume.block_size
 
     @cached(cache={})
-    def group(self, index):
+    def group(self, index: int) -> tuple[int, int]:
         group_index = (index - 1) // self.superblock.s_inodes_per_group
         table_entry_index = (index - 1) % self.superblock.s_inodes_per_group
         return group_index, table_entry_index
 
     @cached(cache=LRUCache(maxsize=32))
-    def offset(self, index) -> int:
+    def offset(self, index: int) -> int:
         group_index, table_entry_index = self.group(index)
         table_offset = (
             self.volume.group_descriptors[group_index].bg_inode_table * self.block_size
@@ -58,11 +58,11 @@ class Volume(object):
     def __init__(
         self,
         stream: PeekableStream,
-        offset=0,
-        ignore_flags=False,
-        ignore_magic=False,
-        ignore_checksum=False,
-        ignore_attr_name_index=False,
+        offset: int = 0,
+        ignore_flags: bool = False,
+        ignore_magic: bool = False,
+        ignore_checksum: bool = False,
+        ignore_attr_name_index: bool = False,
     ):
         errors: list[str] = []
         for name in ("read", "peek", "tell", "seek"):
@@ -75,16 +75,16 @@ class Volume(object):
         if errors:
             raise InvalidStreamException(", ".join(errors))
 
-        self.stream = stream
-        self.offset = offset
-        self.cursor = 0
-        self.ignore_flags = ignore_flags
-        self.ignore_magic = ignore_magic
-        self.ignore_checksum = ignore_checksum
-        self.ignore_attr_name_index = ignore_attr_name_index
-        self.superblock = Superblock(self)
+        self.stream: PeekableStream = stream
+        self.offset: int = offset
+        self.cursor: int = 0
+        self.ignore_flags: bool = ignore_flags
+        self.ignore_magic: bool = ignore_magic
+        self.ignore_checksum: bool = ignore_checksum
+        self.ignore_attr_name_index: bool = ignore_attr_name_index
+        self.superblock: Superblock = Superblock(self)
         self.superblock.verify()
-        self.group_descriptors = []
+        self.group_descriptors: list[BlockDescriptor] = []
         block_size = self.block_size
         table_offset = (self.superblock.offset // block_size + 1) * block_size
         for index in range(
@@ -98,7 +98,7 @@ class Volume(object):
             descriptor.verify()
             self.group_descriptors.insert(index, descriptor)
 
-        self.inodes = Inodes(self)
+        self.inodes: Inodes = Inodes(self)
 
     def __len__(self):
         _ = self.stream.seek(0, io.SEEK_END)
@@ -133,7 +133,7 @@ class Volume(object):
         return self.inodes[EXT4_INO.JOURNAL]
 
     @property
-    def has_hi(self):
+    def has_hi(self) -> int:
         return self.superblock.has_hi
 
     @property
@@ -145,10 +145,10 @@ class Volume(object):
         return self.superblock.seed
 
     @property
-    def block_size(self):
+    def block_size(self) -> int:
         return 2 ** (10 + self.superblock.s_log_block_size)
 
-    def seek(self, offset, mode=io.SEEK_SET):
+    def seek(self, offset: int, mode: int = io.SEEK_SET) -> int:
         if mode == io.SEEK_SET:
             seek = offset
 
@@ -158,28 +158,31 @@ class Volume(object):
         elif mode == io.SEEK_END:
             seek = len(self) - offset
 
+        else:
+            raise NotImplementedError(f"Seek mode {mode} not implemented")
+
         if seek < 0:
             raise OSError(errno.EINVAL, os.strerror(errno.EINVAL))
 
         self.cursor = seek
         return self.cursor
 
-    def read(self, size):
-        self.stream.seek(self.offset + self.cursor)
+    def read(self, size: int) -> bytes:
+        _ = self.stream.seek(self.offset + self.cursor)
         return self.stream.read(size)
 
-    def peek(self, size):
-        self.stream.seek(self.offset + self.cursor)
+    def peek(self, size: int) -> bytes:
+        _ = self.stream.seek(self.offset + self.cursor)
         return self.stream.peek(size)
 
-    def tell(self):
+    def tell(self) -> int:
         return self.cursor
 
-    def block_read(self, index, count=1):
+    def block_read(self, index: int, count: int = 1):
         assert index >= 0
         assert count > 0
         block_size = self.block_size  # Only calculate once
-        self.seek(index * block_size)
+        _ = self.seek(index * block_size)
         return self.read(count * block_size)
 
     @staticmethod

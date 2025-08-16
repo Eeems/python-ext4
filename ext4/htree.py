@@ -28,7 +28,7 @@ class DotDirectoryEntry2(LittleEndianStructure):
             return
 
         message = f"{self} dot or dotdot entry name invalid! actual={self.name}"
-        if not self.ignore_magic:
+        if not self.volume.ignore_magic:
             raise MagicError(message)
 
 
@@ -98,6 +98,8 @@ class DXRoot(DXEntriesBase):
 
     def __init__(self, inode):
         super().__init__(inode, 0)
+        self.dot.volume = self.inode.volume
+        self.dotdot.volume = self.inode.volume
 
 
 class DXFake(LittleEndianStructure):
@@ -129,6 +131,9 @@ class DXNode(DXEntriesBase):
         ("block", c_uint32),
         # ("entries", DXEntry * self.count),
     ]
+
+    def __init__(self, directory, offset):
+        super().__init__(directory, offset)
 
 
 class DXTail(DXBase):
