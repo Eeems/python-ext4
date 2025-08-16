@@ -29,6 +29,11 @@ jobs:
     steps:
       - name: Checkout the Git repository
         uses: actions/checkout@v4
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -e
+          sudo apt-get install -y attr
       - name: Generate test.ext4
         shell: bash
         run: |
