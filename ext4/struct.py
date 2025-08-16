@@ -5,8 +5,11 @@ from ctypes import memmove
 from ctypes import addressof
 from ctypes import sizeof
 from crcmod import mkCrcFun
+from typing import cast
+from typing import Callable
+from typing import Any
 
-crc32c = mkCrcFun(0x11EDC6F41)
+crc32c = cast(Callable[..., int], mkCrcFun(0x11EDC6F41))
 
 
 class MagicError(Exception):
@@ -17,7 +20,7 @@ class ChecksumError(Exception):
     pass
 
 
-def to_hex(data):
+def to_hex(data: Any) -> str:
     if isinstance(data, int):
         return f"0x{data:02X}"
 
@@ -25,10 +28,10 @@ def to_hex(data):
 
 
 class Ext4Struct(LittleEndianStructure):
-    def __init__(self, volume, offset):
+    def __init__(self, volume, offset: int):
         super().__init__()
         self.volume = volume
-        self.offset = offset
+        self.offset: int = offset
         self.read_from_volume()
         self.verify()
 

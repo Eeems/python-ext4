@@ -9,6 +9,8 @@ from ctypes import c_uint32
 from ctypes import c_uint16
 from ctypes import sizeof
 
+from collections.abc import Generator
+
 from ._compat import override
 
 from .struct import Ext4Struct
@@ -152,42 +154,42 @@ class Inode(Ext4Struct):
         ("i_projid", c_uint32),
     ]
 
-    def __new__(cls, volume, offset, i_no):
+    def __new__(cls, volume, offset: int, i_no: int):
         if cls is not Inode:
             return super().__new__(cls)
 
-        volume.seek(offset + Inode.i_mode.offset)
+        _ = volume.seek(offset + Inode.i_mode.offset)
         file_type = (
             Inode.field_type("i_mode").from_buffer_copy(volume.read(Inode.i_mode.size))
             & 0xF000
         )
         if file_type == MODE.IFIFO:
-            return Fifo(volume, offset, i_no)
+            return super().__new__(Fifo)
 
         if file_type == MODE.IFDIR:
-            return Directory(volume, offset, i_no)
+            return super().__new__(Directory)
 
         if file_type == MODE.IFREG:
-            return File(volume, offset, i_no)
+            return super().__new__(File)
 
         if file_type == MODE.IFLNK:
-            return SymbolicLink(volume, offset, i_no)
+            return super().__new__(SymbolicLink)
 
         if file_type == MODE.IFCHR:
-            return CharacterDevice(volume, offset, i_no)
+            return super().__new__(CharacterDevice)
 
         if file_type == MODE.IFBLK:
-            return BlockDevice(volume, offset, i_no)
+            return super().__new__(BlockDevice)
 
         if file_type == MODE.IFSOCK:
-            return Socket(volume, offset, i_no)
+            return super().__new__(Socket)
 
         raise InodeError(f"Unknown file type 0x{file_type:X}")
 
-    def __init__(self, volume, offset, i_no):
-        self.i_no = i_no
+    def __init__(self, volume, offset: int, i_no: int):
+        self.i_no: int = i_no
         super().__init__(volume, offset)
-        self.tree = ExtentTree(self)
+        self.tree: ExtentTree = ExtentTree(self)
 
     @property
     def superblock(self):
@@ -206,11 +208,11 @@ class Inode(Ext4Struct):
         return self.osd2.linux2.l_i_file_acl_high << 32 | self.i_file_acl_lo
 
     @property
-    def has_hi(self):
+    def has_hi(self) -> bool:
         return self.superblock.s_inode_size > self.EXT2_GOOD_OLD_INODE_SIZE
 
     @property
-    def fits_in_hi(self):
+    def fits_in_hi(self) -> bool:
         return (
             self.has_hi
             and self.i_checksum_hi.offset + self.i_checksum_hi.size
@@ -218,15 +220,15 @@ class Inode(Ext4Struct):
         )
 
     @property
-    def seed(self):
+    def seed(self) -> int:
         seed = crc32c(self.i_no.to_bytes(4, "little"), self.volume.seed)
         return crc32c(
             self.i_generation.to_bytes(Inode.i_generation.size, "little"),
             seed,
         )
 
-    @property
-    def checksum(self):
+    @Ext4Struct.checksum.getter
+    def checksum(self) -> int | None:
         if self.superblock.s_creator_os != EXT4_OS.LINUX:
             return None
 
@@ -255,8 +257,8 @@ class Inode(Ext4Struct):
 
         return csum
 
-    @property
-    def expected_checksum(self):
+    @Ext4Struct.expected_checksum.getter
+    def expected_checksum(self) -> int | None:
         if self.superblock.s_creator_os != EXT4_OS.LINUX:
             return None
 
@@ -267,6 +269,7 @@ class Inode(Ext4Struct):
 
         return provided_csum
 
+    @override
     def validate(self):
         super().validate()
         if self.tree is not None:
@@ -299,11 +302,13 @@ class Inode(Ext4Struct):
 
         return BlockIO(self)
 
-    def open(self, mode="rb", encoding=None, newline=None):
+    def open(self, mode: str = "rb", encoding=None, newline=None):
         raise NotImplementedError()
 
     @property
-    def xattrs(self):
+    def xattrs(
+        self,
+    ) -> Generator[tuple[str, bytes], None, None]:
         inline_offset = self.offset + self.EXT2_GOOD_OLD_INODE_SIZE + self.i_extra_isize
         inline_size = self.offset + self.superblock.s_inode_size - inline_offset
         if inline_size > sizeof(ExtendedAttributeIBodyHeader):
@@ -359,38 +364,40 @@ class SymbolicLink(Inode):
 
 
 class Directory(Inode):
-    def __init__(self, volume, offset, i_no):
+    def __init__(self, volume, offset: int, i_no: int):
         super().__init__(volume, offset, i_no)
-        self._dirents = None
+        self._dirents: None | list[DirectoryEntry | DirectoryEntry2] = None
         if self.is_htree:
             self.htree = DXRoot(self)
 
+    @override
     def verify(self):
         super().verify()
         # TODO verify DirectoryEntryHash? Or should this be in validate?
 
+    @override
     def validate(self):
         super().validate()
         # TODO validate each directory entry block with DirectoryEntryTail
 
     @property
-    def has_filetype(self):
+    def has_filetype(self) -> bool:
         return self.superblock.s_feature_incompat & EXT4_FEATURE_INCOMPAT.FILETYPE != 0
 
     @property
-    def is_htree(self):
+    def is_htree(self) -> bool:
         return self.i_flags & EXT4_FL.INDEX != 0
 
     @property
-    def is_casefolded(self):
+    def is_casefolded(self) -> bool:
         return self.i_flags & EXT4_FL.CASEFOLD != 0
 
     @property
-    def is_encrypted(self):
-        return self.i_flags & EXT4_FL.ENCRYPTED != 0
+    def is_encrypted(self) -> bool:
+        return self.i_flags & EXT4_FL.ENCRYPT != 0
 
     @property
-    def hash_in_dirent(self):
+    def hash_in_dirent(self) -> bool:
         return self.is_casefolded and self.is_encrypted
 
     def _opendir(self):
@@ -401,7 +408,7 @@ class Directory(Inode):
             return
 
         _type = DirectoryEntry2 if self.has_filetype else DirectoryEntry
-        dirents = []
+        dirents: list[DirectoryEntry | DirectoryEntry2] = []
         offset = 0
         data = self._open().read()
         while offset < len(data):
@@ -424,8 +431,8 @@ class Directory(Inode):
             if dirent.rec_len < expected_rec_len:
                 warnings.warn(
                     "Directory entry is too small for name length"
-                    f", expected={expected_rec_len}"
-                    f", actual={dirent.rec_len}",
+                    + f", expected={expected_rec_len}"
+                    + f", actual={dirent.rec_len}",
                     RuntimeWarning,
                 )
                 break
@@ -437,13 +444,9 @@ class Directory(Inode):
 
         self._dirents = dirents
 
-    def _get_file_type(self, dirent):
+    def _get_file_type(self, dirent: DirectoryEntry | DirectoryEntry2):
         offset = self.volume.inodes.offset(dirent.inode)
-        self.volume.seek(offset + Inode.i_mode.offset)
-        i_mode = Inode.field_type("i_mode").from_buffer_copy(
-            self.volume.read(Inode.i_mode.size)
-        )
-        self.volume.seek(offset + Inode.i_mode.offset)
+        _ = self.volume.seek(offset + Inode.i_mode.offset)
         i_mode = Inode.field_type("i_mode").from_buffer_copy(
             self.volume.read(Inode.i_mode.size)
         )
