@@ -213,7 +213,7 @@ class Inode(Ext4Struct):
     def fits_in_hi(self):
         return (
             self.has_hi
-            and self.i_checksum_hi.offset + self.i_checksum_hi.size
+            and Inode.i_checksum_hi.offset + Inode.i_checksum_hi.size
             <= self.EXT2_GOOD_OLD_INODE_SIZE + self.i_extra_isize
         )
 
