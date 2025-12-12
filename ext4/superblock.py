@@ -3,6 +3,7 @@ from ctypes import c_uint32
 from ctypes import c_uint16
 from ctypes import c_uint8
 from ctypes import c_ubyte
+from crc32c import crc32c
 
 from .enum import EXT4_FS
 from .enum import EXT4_ERRORS
@@ -18,7 +19,6 @@ from .enum import EXT4_CHKSUM
 from .enum import EXT4_MOUNT
 from .enum import FS_ENCRYPTION_MODE
 from .struct import Ext4Struct
-from .struct import crc32c
 
 
 class Superblock(Ext4Struct):
@@ -183,7 +183,7 @@ class Superblock(Ext4Struct):
         if self.s_feature_incompat & EXT4_FEATURE_INCOMPAT.CSUM_SEED != 0:
             return self.s_checksum_seed
 
-        return crc32c(bytes(self.s_uuid))
+        return crc32c(bytes(self.s_uuid), 0xFFFFFFFF)
 
     @property
     def desc_size(self):

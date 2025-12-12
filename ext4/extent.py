@@ -1,9 +1,9 @@
 from ctypes import c_uint32
 from ctypes import c_uint16
 from ctypes import sizeof
+from crc32c import crc32c
 
 from .struct import Ext4Struct
-from .struct import crc32c
 
 
 class ExtentBlocks(object):

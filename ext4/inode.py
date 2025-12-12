@@ -8,11 +8,11 @@ from ctypes import Union
 from ctypes import c_uint32
 from ctypes import c_uint16
 from ctypes import sizeof
+from crc32c import crc32c
 
 from ._compat import override
 
 from .struct import Ext4Struct
-from .struct import crc32c
 from .struct import MagicError
 
 from .enum import EXT4_OS
@@ -244,11 +244,14 @@ class Inode(Ext4Struct):
         if self.has_hi:
             offset = Inode.i_checksum_hi.offset
             csum = crc32c(data[self.EXT2_GOOD_OLD_INODE_SIZE : offset], csum)
-            if self.fits_in_hi:
-                csum = crc32c(b"\0" * Inode.i_checksum_hi.size, csum)
-                offset += Inode.i_checksum_hi.size
-
-            csum = crc32c(data[offset:], csum)
+            csum = crc32c(b"\0" * Inode.i_checksum_hi.size, csum)
+            csum = crc32c(
+                data[
+                    offset + Inode.i_checksum_hi.size : self.EXT2_GOOD_OLD_INODE_SIZE
+                    + self.i_extra_isize
+                ],
+                csum,
+            )
 
         if not self.has_hi:
             csum &= 0xFFFF
