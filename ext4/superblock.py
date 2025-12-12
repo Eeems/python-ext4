@@ -173,7 +173,7 @@ class Superblock(Ext4Struct):
     @property
     def checksum(self):
         return (
-            crc32c(bytes(self)[: Superblock.s_checksum.offset], 0xFFFFFFFF)
+            crc32c(bytes(self)[: Superblock.s_checksum.offset])
             if self.metadata_csum
             else None
         )
@@ -183,7 +183,7 @@ class Superblock(Ext4Struct):
         if self.s_feature_incompat & EXT4_FEATURE_INCOMPAT.CSUM_SEED != 0:
             return self.s_checksum_seed
 
-        return crc32c(bytes(self.s_uuid), 0xFFFFFFFF)
+        return crc32c(bytes(self.s_uuid))
 
     @property
     def desc_size(self):
