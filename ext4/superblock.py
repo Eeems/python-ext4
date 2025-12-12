@@ -173,7 +173,7 @@ class Superblock(Ext4Struct):
     @property
     def checksum(self):
         return (
-            crc32c(bytes(self)[: Superblock.s_checksum.offset])
+            crc32c(bytes(self)[: Superblock.s_checksum.offset], 0xFFFFFFFF)
             if self.metadata_csum
             else None
         )

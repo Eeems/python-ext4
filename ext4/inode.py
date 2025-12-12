@@ -244,12 +244,12 @@ class Inode(Ext4Struct):
         if self.has_hi:
             offset = Inode.i_checksum_hi.offset
             csum = crc32c(data[self.EXT2_GOOD_OLD_INODE_SIZE : offset], csum)
-            csum = crc32c(b"\0" * Inode.i_checksum_hi.size, csum)
+            if self.fits_in_hi:
+                csum = crc32c(b"\0" * Inode.i_checksum_hi.size, csum)
+                offset += Inode.i_checksum_hi.size
+
             csum = crc32c(
-                data[
-                    offset + Inode.i_checksum_hi.size : self.EXT2_GOOD_OLD_INODE_SIZE
-                    + self.i_extra_isize
-                ],
+                data[offset : self.EXT2_GOOD_OLD_INODE_SIZE + self.i_extra_isize],
                 csum,
             )
 
