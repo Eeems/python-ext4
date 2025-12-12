@@ -11,9 +11,9 @@ from ctypes import sizeof
 
 from ._compat import override
 
+from .struct import crc32c
 from .struct import Ext4Struct
 from .struct import MagicError
-from .struct import crc32c
 
 from .enum import EXT4_OS
 from .enum import EXT4_FL
