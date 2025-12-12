@@ -3,7 +3,6 @@ from ctypes import c_uint32
 from ctypes import c_uint16
 from ctypes import c_uint8
 from ctypes import c_ubyte
-from crc32c import crc32c
 
 from .enum import EXT4_FS
 from .enum import EXT4_ERRORS
@@ -19,6 +18,7 @@ from .enum import EXT4_CHKSUM
 from .enum import EXT4_MOUNT
 from .enum import FS_ENCRYPTION_MODE
 from .struct import Ext4Struct
+from .struct import crc32c
 
 
 class Superblock(Ext4Struct):

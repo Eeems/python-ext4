@@ -1,2 +1,2 @@
 cachetools==6.0.0
-crc32c==2.8
+crcmod==1.7

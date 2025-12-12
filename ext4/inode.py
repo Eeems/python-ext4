@@ -8,12 +8,12 @@ from ctypes import Union
 from ctypes import c_uint32
 from ctypes import c_uint16
 from ctypes import sizeof
-from crc32c import crc32c
 
 from ._compat import override
 
 from .struct import Ext4Struct
 from .struct import MagicError
+from .struct import crc32c
 
 from .enum import EXT4_OS
 from .enum import EXT4_FL

@@ -4,6 +4,9 @@ from ctypes import LittleEndianStructure
 from ctypes import memmove
 from ctypes import addressof
 from ctypes import sizeof
+from crcmod import mkCrcFun
+
+crc32c = mkCrcFun(0x11EDC6F41)
 
 
 class MagicError(Exception):

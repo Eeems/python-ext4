@@ -1,9 +1,9 @@
 from ctypes import c_uint32
 from ctypes import c_uint16
-from crc32c import crc32c
 
 from .enum import EXT4_BG
 from .struct import Ext4Struct
+from .struct import crc32c
 
 
 class BlockDescriptor(Ext4Struct):
