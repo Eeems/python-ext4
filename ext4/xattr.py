@@ -5,11 +5,13 @@ from ctypes import c_uint16
 from ctypes import c_uint8
 from ctypes import sizeof
 
-from .struct import Ext4Struct
-from .struct import crc32c
-from .enum import EXT4_FL
-from .enum import EXT4_FEATURE_INCOMPAT
 from ._compat import override
+
+from .enum import EXT4_FEATURE_INCOMPAT
+from .enum import EXT4_FL
+
+from .struct import crc32c
+from .struct import Ext4Struct
 
 
 class ExtendedAttributeError(Exception):

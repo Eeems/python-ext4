@@ -1,6 +1,6 @@
 [project]
 name = "ext4"
-version = "1.2.1"
+version = "1.2.2"
 authors = [
   { name="Eeems", email="eeems@eeems.email" },
 ]

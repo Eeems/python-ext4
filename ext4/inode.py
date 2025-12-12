@@ -11,8 +11,8 @@ from ctypes import sizeof
 
 from ._compat import override
 
-from .struct import Ext4Struct
 from .struct import crc32c
+from .struct import Ext4Struct
 from .struct import MagicError
 
 from .enum import EXT4_OS
@@ -190,6 +190,16 @@ class Inode(Ext4Struct):
         self.tree = ExtentTree(self)
 
     @property
+    def extra_inode_data(self) -> bytes:
+        if not self.has_hi:
+            return b""
+
+        size = sizeof(self)
+        assert size == self.EXT2_GOOD_OLD_INODE_SIZE + self.i_extra_isize
+        _ = self.volume.seek(self.offset + size)
+        return self.volume.read(self.superblock.s_inode_size - size)
+
+    @property
     def superblock(self):
         return self.volume.superblock
 
@@ -248,7 +258,12 @@ class Inode(Ext4Struct):
                 csum = crc32c(b"\0" * Inode.i_checksum_hi.size, csum)
                 offset += Inode.i_checksum_hi.size
 
-            csum = crc32c(data[offset:], csum)
+            csum = crc32c(
+                data[offset:],
+                csum,
+            )
+            if self.superblock.s_inode_size - len(data) > 0:
+                csum = crc32c(self.extra_inode_data, csum)
 
         if not self.has_hi:
             csum &= 0xFFFF
