@@ -190,6 +190,16 @@ class Inode(Ext4Struct):
         self.tree = ExtentTree(self)
 
     @property
+    def extra_inode_data(self) -> bytes:
+        if not self.has_hi:
+            return b""
+
+        size = sizeof(self)
+        assert size == self.EXT2_GOOD_OLD_INODE_SIZE + self.i_extra_isize
+        _ = self.volume.seek(self.offset + size)
+        return self.volume.read(self.superblock.s_inode_size - size)
+
+    @property
     def superblock(self):
         return self.volume.superblock
 
@@ -252,12 +262,8 @@ class Inode(Ext4Struct):
                 data[offset:],
                 csum,
             )
-            size = self.superblock.s_inode_size - len(data)
-            if size > 0:
-                self.volume.seek(
-                    self.offset + self.EXT2_GOOD_OLD_INODE_SIZE + self.i_extra_isize
-                )
-                csum = crc32c(self.volume.read(size), csum)
+            if self.superblock.s_inode_size - len(data) > 0:
+                csum = crc32c(self.extra_inode_data, csum)
 
         if not self.has_hi:
             csum &= 0xFFFF
