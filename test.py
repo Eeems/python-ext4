@@ -65,6 +65,18 @@ for img_file in ("test32.ext4", "test64.ext4"):
 
         # Extract specific file
         volume = ext4.Volume(f, offset=offset)
+
+        try:
+            print("Validate root inode: ", end="")
+            volume.root.validate()
+            print("pass")
+
+        except ext4.struct.ChecksumError as e:
+            FAILED = True
+            print("fail")
+            print("  ", end="")
+            print(e)
+
         inode = cast(ext4.File, volume.inode_at("/test.txt"))
         _assert("isinstance(inode, ext4.File)")
         b = inode.open()

@@ -249,15 +249,15 @@ class Inode(Ext4Struct):
                 offset += Inode.i_checksum_hi.size
 
             csum = crc32c(
-                data[
-                    offset : self.EXT2_GOOD_OLD_INODE_SIZE
-                    + min(
-                        self.i_extra_isize,
-                        self.superblock.s_inode_size - self.EXT2_GOOD_OLD_INODE_SIZE,
-                    )
-                ],
+                data[offset:],
                 csum,
             )
+            size = self.superblock.s_inode_size - len(data)
+            if size > 0:
+                self.volume.seek(
+                    self.offset + self.EXT2_GOOD_OLD_INODE_SIZE + self.i_extra_isize
+                )
+                csum = crc32c(self.volume.read(size), csum)
 
         if not self.has_hi:
             csum &= 0xFFFF
