@@ -25,10 +25,10 @@ def to_hex(data):
 
 
 class Ext4Struct(LittleEndianStructure):
-    def __init__(self, volume, offset):
+    def __init__(self, volume, offset: int):
         super().__init__()
         self.volume = volume
-        self.offset = offset
+        self.offset: int = offset
         self.read_from_volume()
         self.verify()
 

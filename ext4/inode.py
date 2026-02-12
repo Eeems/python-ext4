@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from codecs import _ReadableStream
 import io
 import warnings
 
@@ -9,7 +10,10 @@ from ctypes import c_uint32
 from ctypes import c_uint16
 from ctypes import sizeof
 
+from typing import cast
+
 from ._compat import override
+from ._compat import ReadableStream
 
 from .struct import crc32c
 from .struct import Ext4Struct
@@ -208,11 +212,11 @@ class Inode(Ext4Struct):
         return self.volume.block_size
 
     @property
-    def i_size(self):
+    def i_size(self) -> int:
         return self.i_size_high << 32 | self.i_size_lo
 
     @property
-    def i_file_acl(self):
+    def i_file_acl(self) -> int:
         return self.osd2.linux2.l_i_file_acl_high << 32 | self.i_file_acl_lo
 
     @property
@@ -303,24 +307,35 @@ class Inode(Ext4Struct):
     def indices(self):
         return self.tree.indices
 
-    def _open(self, mode: str = "rb", encoding: None = None, newline: None = None):
+    def _open(
+        self, mode: str = "rb", encoding: None = None, newline: None = None
+    ) -> ReadableStream:
         if mode != "rb" or encoding is not None or newline is not None:
             raise NotImplementedError()
 
         if self.is_inline:
             self.volume.seek(self.offset + Inode.i_block.offset)
-            data = self.volume.read(self.i_size)
+            data = cast(bytes, self.volume.read(self.i_size))
             return io.BytesIO(data)
 
         return BlockIO(self)
 
-    def open(self, mode="rb", encoding=None, newline=None):
+    def open(
+        self,
+        mode: str = "rb",  # pyright: ignore[reportUnusedParameter]
+        encoding: None = None,  # pyright: ignore[reportUnusedParameter]
+        newline: None = None,  # pyright: ignore[reportUnusedParameter]
+    ) -> io.RawIOBase:
         raise NotImplementedError()
 
     @property
     def xattrs(self):
-        inline_offset = self.offset + self.EXT2_GOOD_OLD_INODE_SIZE + self.i_extra_isize
-        inline_size = self.offset + self.superblock.s_inode_size - inline_offset
+        inline_offset = cast(
+            int, self.offset + self.EXT2_GOOD_OLD_INODE_SIZE + self.i_extra_isize
+        )
+        inline_size = cast(
+            int, self.offset + self.superblock.s_inode_size - inline_offset
+        )
         if inline_size > sizeof(ExtendedAttributeIBodyHeader):
             try:
                 header = ExtendedAttributeIBodyHeader(self, inline_offset, inline_size)
@@ -364,7 +379,7 @@ class File(Inode):
     @override
     def open(
         self, mode: str = "rb", encoding: None = None, newline: None = None
-    ) -> io.BytesIO | BlockIO:
+    ) -> io.RawIOBase:
         return self._open(mode, encoding, newline)
 
 

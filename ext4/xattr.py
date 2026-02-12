@@ -5,6 +5,8 @@ from ctypes import c_uint16
 from ctypes import c_uint8
 from ctypes import sizeof
 
+from typing import cast
+
 from ._compat import override
 
 from .enum import EXT4_FEATURE_INCOMPAT
@@ -69,7 +71,7 @@ class ExtendedAttributeIBodyHeader(ExtendedAttributeBase):
                     warnings.warn(message, RuntimeWarning)
 
                 # TODO determine if e_value_size or i_size are required to limit results?
-                value = inode.open().read()
+                value = cast(bytes, inode.open().read())
 
             elif entry.e_value_size != 0:
                 value_offset = self.value_offset(entry)
@@ -77,7 +79,7 @@ class ExtendedAttributeIBodyHeader(ExtendedAttributeBase):
                     value = b""
                 else:
                     self.volume.seek(value_offset)
-                    value = self.volume.read(entry.e_value_size)
+                    value = cast(bytes, self.volume.read(entry.e_value_size))
             else:
                 value = b""
 
@@ -160,7 +162,7 @@ class ExtendedAttributeEntry(ExtendedAttributeBase):
         return sizeof(self) + self.e_name_len
 
     @property
-    def name_str(self):
+    def name_str(self) -> str:
         name_index = self.e_name_index
         if 0 > name_index or name_index >= len(ExtendedAttributeEntry.NAME_INDICES):
             msg = f"Unknown attribute prefix {self.e_name_index:d}"

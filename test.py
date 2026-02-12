@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import os
 import sys
-import ext4
+import ext4  # pyright: ignore[reportImplicitRelativeImport]
 
 from typing import cast
 from typing import Callable
+from typing import Any
 
 FAILED = False
 
@@ -21,20 +22,20 @@ def test_path_tuple(path: str | bytes, expected: tuple[bytes, ...]):
         print("pass")
 
     except Exception as e:
-        FAILED = True
+        FAILED = True  # pyright: ignore[reportConstantRedefinition]
         print("fail")
         print("  ", end="")
         print(e)
 
 
-def _assert(source: str, debug: Callable[[], str] | None = None):
+def _assert(source: str, debug: Callable[[], Any] | None = None):  # pyright: ignore[reportExplicitAny]
     global FAILED
     print(f"check {source}: ", end="")
     if eval(source):
         print("pass")
         return
 
-    FAILED = True
+    FAILED = True  # pyright: ignore[reportConstantRedefinition]
     print("fail")
     if debug is not None:
         print(f"  {debug()}")
@@ -42,8 +43,8 @@ def _assert(source: str, debug: Callable[[], str] | None = None):
 
 print("check ext4.Volume stream validation", end="")
 try:
-    ext4.Volume(1)
-    FAILED = True
+    _ = ext4.Volume(1)  # pyright: ignore[reportArgumentType]
+    FAILED = True  # pyright: ignore[reportConstantRedefinition]
     print("fail")
 
 except ext4.InvalidStreamException:
@@ -63,14 +64,14 @@ for img_file in ("test32.ext4", "test64.ext4"):
         try:
             print("check MagicError: ", end="")
             _ = ext4.Volume(f, offset=0)
-            FAILED = True
+            FAILED = True  # pyright: ignore[reportConstantRedefinition]
             print("fail")
             print("  MagicError not raised")
         except ext4.struct.MagicError:
             print("pass")
 
         except Exception as e:
-            FAILED = True
+            FAILED = True  # pyright: ignore[reportConstantRedefinition]
             print("fail")
             print("  ", end="")
             print(e)
@@ -84,7 +85,7 @@ for img_file in ("test32.ext4", "test64.ext4"):
             print("pass")
 
         except ext4.struct.ChecksumError as e:
-            FAILED = True
+            FAILED = True  # pyright: ignore[reportConstantRedefinition]
             print("fail")
             print("  ", end="")
             print(e)
@@ -111,7 +112,7 @@ for img_file in ("test32.ext4", "test64.ext4"):
         b = inode.open()
         data = b"hello world1\n"
         for x in range(1, 15):
-            _assert(f"b.peek({x}) == {data[:x]}", lambda: b.peek(x))
+            _assert(f"b.read({x}) == {data[:x]}", lambda: b.read(x))
 
 if FAILED:
     sys.exit(1)

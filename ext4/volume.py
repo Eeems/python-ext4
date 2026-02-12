@@ -6,11 +6,11 @@ import errno
 
 from uuid import UUID
 from pathlib import PurePosixPath
-from typing import Callable
 
 from cachetools import cached
 from cachetools import LRUCache
 
+from ._compat import PeekableStream
 from .enum import EXT4_INO
 from .superblock import Superblock
 from .inode import Inode
@@ -41,7 +41,7 @@ class Inodes(object):
         return group_index, table_entry_index
 
     @cached(cache=LRUCache(maxsize=32))
-    def offset(self, index):
+    def offset(self, index) -> int:
         group_index, table_entry_index = self.group(index)
         table_offset = (
             self.volume.group_descriptors[group_index].bg_inode_table * self.block_size
@@ -57,7 +57,7 @@ class Inodes(object):
 class Volume(object):
     def __init__(
         self,
-        stream: io.Reader[bytes],
+        stream: PeekableStream,
         offset=0,
         ignore_flags=False,
         ignore_magic=False,
@@ -69,7 +69,7 @@ class Volume(object):
             if not hasattr(stream, name):
                 errors.append(f"{name} method missing")
 
-            elif not isinstance(getattr(stream, name), Callable):
+            elif not callable(getattr(stream, name)):  # pyright: ignore[reportAny]
                 errors.append(f"{name} is not a method")
 
         if errors:
