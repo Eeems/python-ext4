@@ -40,6 +40,15 @@ def _assert(source: str, debug: Callable[[], str] | None = None):
         print(f"  {debug()}")
 
 
+print("check ext4.Volume stream validation", end="")
+try:
+    ext4.Volume(1)
+    FAILED = True
+    print("fail")
+
+except ext4.InvalidStreamException:
+    print("pass")
+
 test_path_tuple("/", tuple())
 test_path_tuple(b"/", tuple())
 test_path_tuple("/test", (b"test",))

@@ -6,6 +6,7 @@ import errno
 
 from uuid import UUID
 from pathlib import PurePosixPath
+from typing import Callable
 
 from cachetools import cached
 from cachetools import LRUCache
@@ -56,17 +57,23 @@ class Inodes(object):
 class Volume(object):
     def __init__(
         self,
-        stream,
+        stream: io.Reader[bytes],
         offset=0,
         ignore_flags=False,
         ignore_magic=False,
         ignore_checksum=False,
         ignore_attr_name_index=False,
     ):
-        if not isinstance(stream, io.RawIOBase) and not isinstance(
-            stream, io.BufferedIOBase
-        ):
-            raise InvalidStreamException()
+        errors: list[str] = []
+        for name in ("read", "peek", "tell"):
+            if not hasattr(stream, name):
+                errors.append(f"{name} method missing")
+
+            elif not isinstance(getattr(stream, name), Callable):
+                errors.append(f"{name} is not a method")
+
+        if errors:
+            raise InvalidStreamException(", ".join(errors))
 
         self.stream = stream
         self.offset = offset
