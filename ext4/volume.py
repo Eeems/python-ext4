@@ -65,7 +65,7 @@ class Volume(object):
         ignore_attr_name_index=False,
     ):
         errors: list[str] = []
-        for name in ("read", "peek", "tell"):
+        for name in ("read", "peek", "tell", "seek"):
             if not hasattr(stream, name):
                 errors.append(f"{name} method missing")
 
@@ -101,7 +101,7 @@ class Volume(object):
         self.inodes = Inodes(self)
 
     def __len__(self):
-        self.stream.seek(0, io.SEEK_END)
+        _ = self.stream.seek(0, io.SEEK_END)
         return self.stream.tell() - self.offset
 
     @property

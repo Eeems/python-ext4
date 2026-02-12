@@ -1,3 +1,4 @@
+import os
 from typing import Protocol
 from typing import runtime_checkable
 
@@ -18,6 +19,8 @@ class ReadableStream(Protocol):
     def read(self, size: int | None = -1, /) -> bytes: ...
 
     def tell(self) -> int: ...
+
+    def seek(self, offset: int, whence: int = os.SEEK_SET, /) -> int: ...
 
 
 @runtime_checkable
