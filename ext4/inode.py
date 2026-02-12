@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from codecs import _ReadableStream
 import io
 import warnings
 
