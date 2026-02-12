@@ -1,6 +1,7 @@
 from typing import Protocol
 from typing import runtime_checkable
 
+# Added in python 3.12
 try:
     from typing import override  # pyright: ignore[reportAssignmentType]
 
