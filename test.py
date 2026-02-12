@@ -5,6 +5,7 @@ import sys
 import ext4
 
 from typing import cast
+from typing import Callable
 
 FAILED = False
 
@@ -26,7 +27,7 @@ def test_path_tuple(path: str | bytes, expected: tuple[bytes, ...]):
         print(e)
 
 
-def _assert(source: str):
+def _assert(source: str, debug: Callable[[], str] | None = None):
     global FAILED
     print(f"check {source}: ", end="")
     if eval(source):
@@ -35,6 +36,8 @@ def _assert(source: str):
 
     FAILED = True
     print("fail")
+    if debug is not None:
+        print(f"  {debug()}")
 
 
 test_path_tuple("/", tuple())
@@ -91,8 +94,15 @@ for img_file in ("test32.ext4", "test64.ext4"):
             attrs = {k: v for k, v in inode.xattrs}
             for j in range(1, 21):
                 _assert(f'attrs["user.name{j}"] == b"value{i}_{j}"')
+
             data = inode.open().read()
             _assert(f'data == b"hello world{i}\\n"')
+
+        inode = cast(ext4.File, volume.inode_at("/test1.txt"))
+        b = inode.open()
+        data = b"hello world1\n"
+        for x in range(1, 15):
+            _assert(f"b.peek({x}) == {data[:x]}", lambda: b.peek(x))
 
 if FAILED:
     sys.exit(1)

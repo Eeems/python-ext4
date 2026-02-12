@@ -106,6 +106,9 @@ class BlockIO(io.RawIOBase):
         if self.cursor >= len(self):
             return b""
 
+        if self.cursor + size >= len(self):
+            size = len(self) - self.cursor
+
         start_index = self.cursor // self.block_size
         end_index = (self.cursor + size - 1) // self.block_size
         start_offset = self.cursor % self.block_size
