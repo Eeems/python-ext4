@@ -41,7 +41,7 @@ def _assert(source: str, debug: Callable[[], Any] | None = None):  # pyright: ig
         print(f"  {debug()}")
 
 
-print("check ext4.Volume stream validation", end="")
+print("check ext4.Volume stream validation: ", end="")
 try:
     _ = ext4.Volume(1)  # pyright: ignore[reportArgumentType]
     FAILED = True  # pyright: ignore[reportConstantRedefinition]
@@ -49,6 +49,12 @@ try:
 
 except ext4.InvalidStreamException:
     print("pass")
+
+except Exception as e:
+    FAILED = True  # pyright: ignore[reportConstantRedefinition]
+    print("fail")
+    print("  ", end="")
+    print(e)
 
 test_path_tuple("/", tuple())
 test_path_tuple(b"/", tuple())
