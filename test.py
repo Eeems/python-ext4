@@ -118,6 +118,7 @@ for img_file in ("test32.ext4", "test64.ext4"):
         b = inode.open()
         data = b"hello world1\n"
         for x in range(1, 15):
+            _ = b.seek(0)
             _assert(f"b.read({x}) == {data[:x]}", lambda: b.read(x))
 
 if FAILED:
