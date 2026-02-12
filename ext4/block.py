@@ -91,8 +91,8 @@ class BlockIO(io.RawIOBase):
         return self.cursor
 
     @override
-    def read(self, size: int = -1) -> bytes:
-        if size < 0:
+    def read(self, size: int | None = -1) -> bytes:
+        if size is None or size < 0:
             size = len(self) - self.cursor
 
         data = self.peek(size)

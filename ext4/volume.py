@@ -10,6 +10,7 @@ from pathlib import PurePosixPath
 from cachetools import cached
 from cachetools import LRUCache
 
+from ._compat import PeekableStream
 from .enum import EXT4_INO
 from .superblock import Superblock
 from .inode import Inode
@@ -40,7 +41,7 @@ class Inodes(object):
         return group_index, table_entry_index
 
     @cached(cache=LRUCache(maxsize=32))
-    def offset(self, index):
+    def offset(self, index) -> int:
         group_index, table_entry_index = self.group(index)
         table_offset = (
             self.volume.group_descriptors[group_index].bg_inode_table * self.block_size
@@ -56,17 +57,23 @@ class Inodes(object):
 class Volume(object):
     def __init__(
         self,
-        stream,
+        stream: PeekableStream,
         offset=0,
         ignore_flags=False,
         ignore_magic=False,
         ignore_checksum=False,
         ignore_attr_name_index=False,
     ):
-        if not isinstance(stream, io.RawIOBase) and not isinstance(
-            stream, io.BufferedIOBase
-        ):
-            raise InvalidStreamException()
+        errors: list[str] = []
+        for name in ("read", "peek", "tell", "seek"):
+            if not hasattr(stream, name):
+                errors.append(f"{name} method missing")
+
+            elif not callable(getattr(stream, name)):  # pyright: ignore[reportAny]
+                errors.append(f"{name} is not a method")
+
+        if errors:
+            raise InvalidStreamException(", ".join(errors))
 
         self.stream = stream
         self.offset = offset
@@ -94,7 +101,7 @@ class Volume(object):
         self.inodes = Inodes(self)
 
     def __len__(self):
-        self.stream.seek(0, io.SEEK_END)
+        _ = self.stream.seek(0, io.SEEK_END)
         return self.stream.tell() - self.offset
 
     @property
