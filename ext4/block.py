@@ -5,8 +5,8 @@ from ._compat import override
 
 
 class BlockIOBlocks(object):
-    def __init__(self, blockio):
-        self.blockio = blockio
+    def __init__(self, blockio: "BlockIO"):
+        self.blockio: BlockIO = blockio
 
     @property
     def block_size(self):
@@ -49,6 +49,7 @@ class BlockIO(io.RawIOBase):
         self.inode = inode
         self.cursor: int = 0
         self.blocks: BlockIOBlocks = BlockIOBlocks(self)
+        self.null_block: bytearray = bytearray(self.block_size)
 
     def __len__(self):
         return self.inode.i_size
@@ -112,13 +113,14 @@ class BlockIO(io.RawIOBase):
         start_index = self.cursor // self.block_size
         end_index = (self.cursor + size - 1) // self.block_size
         start_offset = self.cursor % self.block_size
-        blocks_list = []
+        blocks_list: list[memoryview] = []
 
         for i in range(start_index, end_index + 1):
-            block = self.blocks[i]
-            mv = memoryview(block)
+            block: bytes | bytearray = self.blocks[i] or self.null_block
+            view = memoryview(block)
             if i == start_index:
-                mv = mv[start_offset:]
-            blocks_list.append(mv)
+                view = view[start_offset:]
+
+            blocks_list.append(view)
 
         return b"".join(blocks_list)[:size]
