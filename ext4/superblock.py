@@ -25,6 +25,8 @@ from .enum import FS_ENCRYPTION_MODE
 from .struct import Ext4Struct
 from .struct import crc32c
 
+from ._compat import assert_type
+
 if TYPE_CHECKING:
     from .volume import Volume
 
@@ -135,14 +137,17 @@ class Superblock(Ext4Struct):
 
     @property
     def has_hi(self) -> bool:
-        return (self.s_feature_incompat & EXT4_FEATURE_INCOMPAT.IS64BIT) != 0  # pyright: ignore[reportAny]
+        return (self.feature_incompat & EXT4_FEATURE_INCOMPAT.IS64BIT) != 0
 
     @property
     def s_blocks_count(self) -> int:
-        return (  # pyright: ignore[reportAny]
-            (self.s_blocks_per_group) * len(self.volume.group_descriptors)  # pyright: ignore[reportAny]
-            - self.s_reserved_gdt_blocks  # pyright: ignore[reportAny]
-            - self.s_overhead_blocks  # pyright: ignore[reportAny]
+        s_blocks_per_group: int = assert_type(self.s_blocks_per_group, int)  # pyright: ignore[reportAny]
+        s_reserved_gdt_blocks: int = assert_type(self.s_reserved_gdt_blocks, int)  # pyright: ignore[reportAny]
+        s_overhead_blocks: int = assert_type(self.s_overhead_blocks, int)  # pyright: ignore[reportAny]
+        return (
+            (s_blocks_per_group) * len(self.volume.group_descriptors)
+            - s_reserved_gdt_blocks
+            - s_overhead_blocks
         )
         # if self.has_hi:
         #     return self.s_blocks_count_hi << 32 | self.s_blocks_count_lo
@@ -151,21 +156,25 @@ class Superblock(Ext4Struct):
 
     @property
     def s_r_blocks_count(self) -> int:
+        s_r_blocks_count_lo: int = assert_type(self.s_r_blocks_count_lo, int)  # pyright: ignore[reportAny]
+        s_r_blocks_count_hi: int = assert_type(self.s_r_blocks_count_hi, int)  # pyright: ignore[reportAny]
         if self.has_hi:
-            return self.s_r_blocks_count_hi << 32 | self.s_r_blocks_count_lo  # pyright: ignore[reportAny]
+            return s_r_blocks_count_hi << 32 | s_r_blocks_count_lo
 
-        return self.s_r_blocks_count_lo  # pyright: ignore[reportAny]
+        return s_r_blocks_count_lo
 
     @property
     def s_free_blocks_count(self) -> int:
+        s_free_blocks_count_lo: int = assert_type(self.s_free_blocks_count_lo, int)  # pyright: ignore[reportAny]
+        s_free_blocks_count_hi: int = assert_type(self.s_free_blocks_count_hi, int)  # pyright: ignore[reportAny]
         if self.has_hi:
-            return self.s_free_blocks_count_hi << 32 | self.s_free_blocks_count_lo  # pyright: ignore[reportAny]
+            return s_free_blocks_count_hi << 32 | s_free_blocks_count_lo
 
-        return self.s_free_blocks_count_lo  # pyright: ignore[reportAny]
+        return s_free_blocks_count_lo
 
     @property
     def metadata_csum(self) -> int:
-        return self.s_feature_ro_compat & EXT4_FEATURE_RO_COMPAT.METADATA_CSUM != 0  # pyright: ignore[reportAny]
+        return self.feature_ro_compat & EXT4_FEATURE_RO_COMPAT.METADATA_CSUM != 0
 
     @Ext4Struct.expected_magic.getter
     def expected_magic(self) -> int:
@@ -173,14 +182,16 @@ class Superblock(Ext4Struct):
 
     @Ext4Struct.magic.getter
     def magic(self) -> int:
-        return self.s_magic  # pyright: ignore[reportAny]
+        s_magic: int = assert_type(self.s_magic, int)  # pyright: ignore[reportAny]
+        return s_magic
 
     @Ext4Struct.expected_checksum.getter
-    def expected_checksum(self):
-        return self.s_checksum if self.metadata_csum else None  # pyright: ignore[reportAny]
+    def expected_checksum(self) -> int | None:
+        s_checksum: int = assert_type(self.s_checksum, int)  # pyright: ignore[reportAny]
+        return s_checksum if self.metadata_csum else None
 
     @Ext4Struct.checksum.getter
-    def checksum(self):
+    def checksum(self) -> int | None:
         return (
             crc32c(bytes(self)[: Superblock.s_checksum.offset])
             if self.metadata_csum
@@ -188,20 +199,42 @@ class Superblock(Ext4Struct):
         )
 
     @property
-    def seed(self):
-        assert isinstance(self.s_feature_incompat, EXT4_FEATURE_INCOMPAT)  # pyright: ignore[reportAny]
-        if self.s_feature_incompat & EXT4_FEATURE_INCOMPAT.CSUM_SEED != 0:
-            assert isinstance(self.s_checksum_seed, int)  # pyright: ignore[reportAny]
-            return self.s_checksum_seed
+    def feature_incompat(self) -> EXT4_FEATURE_INCOMPAT:
+        s_feature_incompat: EXT4_FEATURE_INCOMPAT = assert_type(  # pyright: ignore[reportAny]
+            self.s_feature_incompat,  # pyright: ignore[reportAny]
+            EXT4_FEATURE_INCOMPAT,
+        )
+        return s_feature_incompat
 
-        assert isinstance(self.s_uuid, int)  # pyright: ignore[reportAny]
-        return crc32c(bytes(self.s_uuid))
+    @property
+    def feature_compat(self) -> EXT4_FEATURE_COMPAT:
+        s_feature_compat: EXT4_FEATURE_COMPAT = assert_type(  # pyright: ignore[reportAny]
+            self.s_feature_compat,  # pyright: ignore[reportAny]
+            EXT4_FEATURE_COMPAT,
+        )
+        return s_feature_compat
+
+    @property
+    def feature_ro_compat(self) -> EXT4_FEATURE_COMPAT:
+        s_feature_ro_compat: EXT4_FEATURE_RO_COMPAT = assert_type(  # pyright: ignore[reportAny]
+            self.s_feature_ro_compat,  # pyright: ignore[reportAny]
+            EXT4_FEATURE_RO_COMPAT,
+        )
+        return s_feature_ro_compat
+
+    @property
+    def seed(self) -> int:
+        if self.feature_incompat & EXT4_FEATURE_INCOMPAT.CSUM_SEED != 0:
+            s_checksum_seed: int = assert_type(self.s_checksum_seed, int)  # pyright: ignore[reportAny]
+            return s_checksum_seed
+
+        s_uuid: bytes = assert_type(self.s_uuid, bytes)  # pyright: ignore[reportAny]
+        return crc32c(s_uuid)
 
     @property
     def desc_size(self) -> int:
-        assert isinstance(self.s_feature_incompat, EXT4_FEATURE_INCOMPAT)  # pyright: ignore[reportAny]
-        if self.s_feature_incompat & EXT4_FEATURE_INCOMPAT.IS64BIT != 0:
-            assert isinstance(self.s_desc_size, int)  # pyright: ignore[reportAny]
-            return self.s_desc_size
+        if self.feature_incompat & EXT4_FEATURE_INCOMPAT.IS64BIT != 0:
+            s_desc_size: int = assert_type(self.s_desc_size, int)  # pyright: ignore[reportAny]
+            return s_desc_size
 
         return 32

@@ -16,7 +16,7 @@ from .enum import EXT4_FEATURE_INCOMPAT
 from .struct import Ext4Struct
 from .struct import crc32c
 
-from ._compat import override
+from ._compat import assert_type, override
 
 if TYPE_CHECKING:
     from .inode import Inode
@@ -46,37 +46,34 @@ class ExtendedAttributeIBodyHeader(ExtendedAttributeBase):
 
     @ExtendedAttributeBase.magic.getter
     def magic(self) -> int:
-        return self.h_magic  # pyright: ignore[reportAny]
+        h_magic: int = assert_type(self.h_magic, int)  # pyright: ignore[reportAny]
+        return h_magic
 
     @ExtendedAttributeBase.expected_magic.getter
     def expected_magic(self):
         return 0xEA020000
 
     def value_offset(self, entry: "ExtendedAttributeEntry") -> int:
-        return self.offset + sizeof(self) + entry.e_value_offs  # pyright: ignore[reportAny]
+        e_value_offs: int = assert_type(entry.e_value_offs, int)  # pyright: ignore[reportAny]
+        return self.offset + sizeof(self) + e_value_offs
 
     def __iter__(self) -> Generator[tuple[str, bytes], None, None]:
         offset = self.offset + (4 * ((sizeof(self) + 3) // 4))
         i = 0
         while i < self.data_size:
             entry = ExtendedAttributeEntry(self.inode, offset + i, self.data_size - i)
-            assert isinstance(entry.e_name_len, int)  # pyright: ignore[reportAny]
-            assert isinstance(entry.e_name_index, int)  # pyright: ignore[reportAny]
-            assert isinstance(entry.e_value_offs, int)  # pyright: ignore[reportAny]
-            if (
-                entry.e_name_len
-                | entry.e_name_index
-                | entry.e_value_offs
-                | entry.value_inum
-            ) == 0:
+            e_name_len: int = assert_type(entry.e_name_len, int)  # pyright: ignore[reportAny]
+            e_name_index: int = assert_type(entry.e_name_index, int)  # pyright: ignore[reportAny]
+            e_value_offs: int = assert_type(entry.e_value_offs, int)  # pyright: ignore[reportAny]
+            if (e_name_len | e_name_index | e_value_offs | entry.value_inum) == 0:
                 break
 
             value: bytes
-            assert isinstance(entry.e_value_size, int)  # pyright: ignore[reportAny]
+            e_value_size: int = assert_type(entry.e_value_size, int)  # pyright: ignore[reportAny]
             if entry.value_inum != 0:
                 inode = self.volume.inodes[entry.value_inum]
-                assert isinstance(inode.i_flags, EXT4_FL)  # pyright: ignore[reportAny]
-                if (inode.i_flags & EXT4_FL.EA_INODE) != 0:
+                i_flags: EXT4_FL = assert_type(inode.i_flags, EXT4_FL)  # pyright: ignore[reportAny]
+                if (i_flags & EXT4_FL.EA_INODE) != 0:
                     message = f"Inode {inode.i_no:d} is not marked as large extended attribute value"
                     if not self.volume.ignore_flags:
                         raise ExtendedAttributeError(message)
@@ -85,14 +82,14 @@ class ExtendedAttributeIBodyHeader(ExtendedAttributeBase):
                 # TODO determine if e_value_size or i_size are required to limit results?
                 value = inode.open().read()
 
-            elif entry.e_value_size != 0:
+            elif e_value_size != 0:
                 value_offset = self.value_offset(entry)
-                if value_offset + entry.e_value_size > self.offset + self.data_size:
+                if value_offset + e_value_size > self.offset + self.data_size:
                     value = b""
 
                 else:
                     _ = self.volume.seek(value_offset)
-                    value = self.volume.read(entry.e_value_size)
+                    value = self.volume.read(e_value_size)
 
             else:
                 value = b""
@@ -116,30 +113,30 @@ class ExtendedAttributeHeader(ExtendedAttributeIBodyHeader):
     @override
     def verify(self):
         super().verify()
-        assert isinstance(self.h_blocks, int)  # pyright: ignore[reportAny]
-        if self.h_blocks != 1:
+        h_blocks: int = assert_type(self.h_blocks, int)  # pyright: ignore[reportAny]
+        if h_blocks != 1:
             raise ExtendedAttributeError(
                 f"Invalid number of xattr blocks at offset 0x{self.offset:X} of inode "
-                + f"{self.inode.i_no:d}: {self.h_blocks:d} (expected 1)"
+                + f"{self.inode.i_no:d}: {h_blocks:d} (expected 1)"
             )
 
     @override
     def value_offset(self, entry: "ExtendedAttributeEntry") -> int:
-        assert isinstance(entry.e_value_offs, int)  # pyright: ignore[reportAny]
-        return self.offset + entry.e_value_offs
+        e_value_offs: int = assert_type(entry.e_value_offs, int)  # pyright: ignore[reportAny]
+        return self.offset + e_value_offs
 
     @ExtendedAttributeIBodyHeader.expected_checksum.getter
     def expected_checksum(self):
-        assert isinstance(self.h_checksum, int)  # pyright: ignore[reportAny]
-        if not self.h_checksum:
+        h_checksum: int = assert_type(self.h_checksum, int)  # pyright: ignore[reportAny]
+        if not h_checksum:
             return None
 
-        return self.h_checksum
+        return h_checksum
 
     @ExtendedAttributeIBodyHeader.checksum.getter
     def checksum(self):
-        assert isinstance(self.h_checksum, int)  # pyright: ignore[reportAny]
-        if not self.h_checksum:
+        h_checksum: int = assert_type(self.h_checksum, int)  # pyright: ignore[reportAny]
+        if not h_checksum:
             return None
 
         csum = crc32c(
@@ -177,20 +174,20 @@ class ExtendedAttributeEntry(ExtendedAttributeBase):
     @override
     def read_from_volume(self):
         super().read_from_volume()
-        assert isinstance(self.e_name_len, int)  # pyright: ignore[reportAny]
-        self.e_name: bytes = self.volume.stream.read(self.e_name_len)  # pyright: ignore[reportUninitializedInstanceVariable]
+        e_name_len: int = assert_type(self.e_name_len, int)  # pyright: ignore[reportAny]
+        self.e_name: bytes = self.volume.stream.read(e_name_len)  # pyright: ignore[reportUninitializedInstanceVariable]
 
     @ExtendedAttributeBase.size.getter
     def size(self) -> int:
-        assert isinstance(self.e_name_len, int)  # pyright: ignore[reportAny]
-        return sizeof(self) + self.e_name_len
+        e_name_len: int = assert_type(self.e_name_len, int)  # pyright: ignore[reportAny]
+        return sizeof(self) + e_name_len
 
     @property
     def name_str(self) -> str:
-        assert isinstance(self.e_name_index, int)  # pyright: ignore[reportAny]
-        name_index = self.e_name_index
+        e_name_index: int = assert_type(self.e_name_index, int)  # pyright: ignore[reportAny]
+        name_index = e_name_index
         if 0 > name_index or name_index >= len(ExtendedAttributeEntry.NAME_INDICES):
-            msg = f"Unknown attribute prefix {self.e_name_index:d}"
+            msg = f"Unknown attribute prefix {e_name_index:d}"
             if self.volume.ignore_attr_name_index:
                 warnings.warn(msg, RuntimeWarning)
                 name_index = 0
@@ -203,16 +200,11 @@ class ExtendedAttributeEntry(ExtendedAttributeBase):
 
     @property
     def value_inum(self) -> int:
-        assert isinstance(self.e_value_inum, int)  # pyright: ignore[reportAny]
-        assert isinstance(
-            self.volume.superblock.s_feature_incompat,  # pyright: ignore[reportAny]
-            EXT4_FEATURE_INCOMPAT,
-        )
+        e_value_inum: int = assert_type(self.e_value_inum, int)  # pyright: ignore[reportAny]
         return (
-            self.e_value_inum
+            e_value_inum
             if (
-                self.volume.superblock.s_feature_incompat
-                & EXT4_FEATURE_INCOMPAT.EA_INODE
+                self.volume.superblock.feature_incompat & EXT4_FEATURE_INCOMPAT.EA_INODE
             )
             != 0
             else 0

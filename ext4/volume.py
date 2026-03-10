@@ -11,6 +11,7 @@ from cachetools import cached
 from cachetools import LRUCache
 
 from ._compat import PeekableStream
+from ._compat import assert_type
 from .enum import EXT4_INO
 from .superblock import Superblock
 from .inode import Inode
@@ -36,9 +37,9 @@ class Inodes(object):
 
     @cached(cache={})
     def group(self, index: int) -> tuple[int, int]:
-        assert isinstance(self.superblock.s_inodes_per_group, int)  # pyright: ignore[reportAny]
-        group_index = (index - 1) // self.superblock.s_inodes_per_group
-        table_entry_index = (index - 1) % self.superblock.s_inodes_per_group
+        s_inodes_per_group: int = assert_type(self.superblock.s_inodes_per_group, int)  # pyright: ignore[reportAny]
+        group_index = (index - 1) // s_inodes_per_group
+        table_entry_index = (index - 1) % s_inodes_per_group
         return group_index, table_entry_index
 
     @cached(cache=LRUCache(maxsize=32))  # pyright: ignore[reportUnknownArgumentType]
@@ -47,8 +48,8 @@ class Inodes(object):
         table_offset = (
             self.volume.group_descriptors[group_index].bg_inode_table * self.block_size
         )
-        assert isinstance(self.superblock.s_inode_size, int)  # pyright: ignore[reportAny]
-        return table_offset + table_entry_index * self.superblock.s_inode_size
+        s_inode_size: int = assert_type(self.superblock.s_inode_size, int)  # pyright: ignore[reportAny]
+        return table_offset + table_entry_index * s_inode_size
 
     @cached(cache=LRUCache(maxsize=32))  # pyright: ignore[reportUnknownArgumentType]
     def __getitem__(self, index: int):
@@ -89,11 +90,9 @@ class Volume(object):
         self.group_descriptors: list[BlockDescriptor] = []
         block_size = self.block_size
         table_offset = (self.superblock.offset // block_size + 1) * block_size
-        assert isinstance(self.superblock.s_inodes_count, int)  # pyright: ignore[reportAny]
-        assert isinstance(self.superblock.s_inodes_per_group, int)  # pyright: ignore[reportAny]
-        for index in range(
-            0, self.superblock.s_inodes_count // self.superblock.s_inodes_per_group
-        ):
+        s_inodes_count: int = assert_type(self.superblock.s_inodes_count, int)  # pyright: ignore[reportAny]
+        s_inodes_per_group: int = assert_type(self.superblock.s_inodes_per_group, int)  # pyright: ignore[reportAny]
+        for index in range(0, s_inodes_count // s_inodes_per_group):
             descriptor = BlockDescriptor(
                 self,
                 table_offset + (index * self.superblock.desc_size),
@@ -142,8 +141,8 @@ class Volume(object):
 
     @property
     def uuid(self):
-        assert isinstance(self.superblock.s_uuid, bytes)  # pyright: ignore[reportAny]
-        return UUID(bytes=self.superblock.s_uuid)
+        s_uuid: bytes = assert_type(self.superblock.s_uuid, bytes)  # pyright: ignore[reportAny]
+        return UUID(bytes=s_uuid)
 
     @property
     def seed(self):
@@ -151,11 +150,11 @@ class Volume(object):
 
     @property
     def block_size(self) -> int:
-        assert isinstance(self.superblock.s_log_block_size, int)  # pyright: ignore[reportAny]
+        s_log_block_size: int = assert_type(self.superblock.s_log_block_size, int)  # pyright: ignore[reportAny]
         return int(
             2
             ** (  # pyright: ignore[reportAny]
-                10 + self.superblock.s_log_block_size
+                10 + s_log_block_size
             )
         )
 

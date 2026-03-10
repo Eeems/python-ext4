@@ -18,6 +18,7 @@ from .struct import Ext4Struct
 from .struct import MagicError
 from .enum import DX_HASH
 from ._compat import override
+from ._compat import assert_type
 
 if TYPE_CHECKING:
     from .inode import Directory
@@ -41,10 +42,11 @@ class DotDirectoryEntry2(LittleEndianStructureWithVolume):
     ]
 
     def verify(self) -> None:
-        if self.name in (b".\0\0\0", b".\0\0\0"):  # pyright: ignore[reportAny]
+        name = assert_type(self.name, str)  # pyright: ignore[reportAny]
+        if name in (b".\0\0\0", b".\0\0\0"):
             return
 
-        message = f"{self} dot or dotdot entry name invalid! actual={self.name}"  # pyright: ignore[reportAny]
+        message = f"{self} dot or dotdot entry name invalid! actual={name}"
         assert self.volume is not None
         if not self.volume.ignore_magic:
             raise MagicError(message)
@@ -88,9 +90,11 @@ class DXEntry(DXBase):
     def __init__(self, parent: "DXEntriesBase", index: int):
         self.index: int = index
         self.parent: DXEntriesBase = parent
+        dx_root_info: DXRootInfo = assert_type(parent.dx_root_info, DXRootInfo)  # pyright: ignore[reportAny]
+        info_length: int = assert_type(dx_root_info.info_length, int)  # pyright: ignore[reportAny]
         super().__init__(
             parent.directory,
-            parent.offset + parent.size + index * parent.dx_root_info.info_length,  # pyright: ignore[reportAny]
+            parent.offset + parent.size + index * info_length,
         )
 
 
@@ -101,7 +105,8 @@ class DXEntriesBase(DXBase):
 
     @property
     def entries(self) -> Generator[DXEntry, None, None]:
-        for i in range(0, self.count - 1):  # pyright: ignore[reportAny]
+        count: int = assert_type(self.count, int)  # pyright: ignore[reportAny]
+        for i in range(0, count - 1):
             yield DXEntry(self, i)
 
 
@@ -140,7 +145,8 @@ class DXFake(LittleEndianStructure):
 
     @property
     def magic(self) -> int:
-        return self.inode  # pyright: ignore[reportAny]
+        inode: int = assert_type(self.inode, int)  # pyright: ignore[reportAny]
+        return inode
 
 
 @final
@@ -172,9 +178,9 @@ class DXTail(DXBase):
 
     def __init__(self, parent: DXNode):
         self.parent = parent
+        count: int = assert_type(parent.count, int)  # pyright: ignore[reportAny]
+        dx_root_info: DXRootInfo = assert_type(parent.dx_root_info, DXRootInfo)  # pyright: ignore[reportAny]
+        info_length: int = assert_type(dx_root_info.info_length, int)  # pyright: ignore[reportAny]
         super().__init__(
-            parent.directory,
-            parent.offset  # pyright: ignore[reportAny]
-            + parent.size
-            + (parent.count + 1) * parent.dx_root_info.info_length,  # pyright: ignore[reportAny]
+            parent.directory, parent.offset + parent.size + (count + 1) * info_length
         )

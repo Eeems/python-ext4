@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from .enum import EXT4_BG
 from .struct import Ext4Struct
 from .struct import crc32c
+from ._compat import assert_type
 
 if TYPE_CHECKING:
     from .volume import Volume
@@ -49,73 +50,93 @@ class BlockDescriptor(Ext4Struct):
 
     @property
     def bg_block_bitmap(self) -> int:
+        bg_block_bitmap_lo: int = assert_type(self.bg_block_bitmap_lo, int)  # pyright: ignore[reportAny]
+        bg_block_bitmap_hi: int = assert_type(self.bg_block_bitmap_hi, int)  # pyright: ignore[reportAny]
         if self.volume.has_hi:
-            return self.bg_block_bitmap_hi << 32 | self.bg_block_bitmap_lo  # pyright: ignore[reportAny]
+            return bg_block_bitmap_hi << 32 | bg_block_bitmap_lo
 
-        return self.bg_block_bitmap_lo  # pyright: ignore[reportAny]
+        return bg_block_bitmap_lo
 
     @property
     def bg_inode_bitmap(self) -> int:
+        bg_inode_bitmap_lo: int = assert_type(self.bg_inode_bitmap_lo, int)  # pyright: ignore[reportAny]
+        bg_inode_bitmap_hi: int = assert_type(self.bg_inode_bitmap_hi, int)  # pyright: ignore[reportAny]
         if self.volume.has_hi:
-            return self.bg_inode_bitmap_hi << 32 | self.bg_inode_bitmap_lo  # pyright: ignore[reportAny]
+            return bg_inode_bitmap_hi << 32 | bg_inode_bitmap_lo
 
-        return self.bg_inode_bitmap_lo  # pyright: ignore[reportAny]
+        return bg_inode_bitmap_lo
 
     @property
     def bg_free_blocks_count(self) -> int:
+        bg_free_blocks_count_lo: int = assert_type(self.bg_free_blocks_count_lo, int)  # pyright: ignore[reportAny]
+        bg_free_blocks_count_hi: int = assert_type(self.bg_free_blocks_count_hi, int)  # pyright: ignore[reportAny]
         if self.volume.has_hi:
-            return self.bg_free_blocks_count_hi << 32 | self.bg_free_blocks_count_lo  # pyright: ignore[reportAny]
+            return bg_free_blocks_count_hi << 32 | bg_free_blocks_count_lo
 
-        return self.bg_free_blocks_count_lo  # pyright: ignore[reportAny]
+        return bg_free_blocks_count_lo
 
     @property
     def bg_free_inodes_count(self) -> int:
+        bg_free_inodes_count_lo: int = assert_type(self.bg_free_inodes_count_lo, int)  # pyright: ignore[reportAny]
+        bg_free_inodes_count_hi: int = assert_type(self.bg_free_inodes_count_hi, int)  # pyright: ignore[reportAny]
         if self.volume.has_hi:
-            return self.bg_free_inodes_count_hi << 32 | self.bg_free_inodes_count_lo  # pyright: ignore[reportAny]
+            return bg_free_inodes_count_hi << 32 | bg_free_inodes_count_lo
 
-        return self.bg_free_inodes_count_lo  # pyright: ignore[reportAny]
+        return bg_free_inodes_count_lo
 
     @property
     def bg_exclude_bitmap(self) -> int:
+        bg_exclude_bitmap_lo: int = assert_type(self.bg_exclude_bitmap_lo, int)  # pyright: ignore[reportAny]
+        bg_exclude_bitmap_hi: int = assert_type(self.bg_exclude_bitmap_hi, int)  # pyright: ignore[reportAny]
         if self.volume.has_hi:
-            return self.bg_exclude_bitmap_hi << 32 | self.bg_exclude_bitmap_lo  # pyright: ignore[reportAny]
+            return bg_exclude_bitmap_hi << 32 | bg_exclude_bitmap_lo
 
-        return self.bg_exclude_bitmap_lo  # pyright: ignore[reportAny]
+        return bg_exclude_bitmap_lo
 
     @property
     def bg_used_dirs_count(self) -> int:
+        bg_used_dirs_count_lo: int = assert_type(self.bg_used_dirs_count_lo, int)  # pyright: ignore[reportAny]
+        bg_used_dirs_count_hi: int = assert_type(self.bg_used_dirs_count_hi, int)  # pyright: ignore[reportAny]
         if self.volume.has_hi:
-            return self.bg_used_dirs_count_hi << 32 | self.bg_used_dirs_count_lo  # pyright: ignore[reportAny]
+            return bg_used_dirs_count_hi << 32 | bg_used_dirs_count_lo
 
-        return self.bg_used_dirs_count_lo  # pyright: ignore[reportAny]
+        return bg_used_dirs_count_lo
 
     @property
     def bg_block_bitmap_csum(self) -> int:
+        bg_block_bitmap_csum_lo: int = assert_type(self.bg_block_bitmap_csum_lo, int)  # pyright: ignore[reportAny]
+        bg_block_bitmap_csum_hi: int = assert_type(self.bg_block_bitmap_csum_hi, int)  # pyright: ignore[reportAny]
         if self.volume.has_hi:
-            return self.bg_block_bitmap_csum_hi << 32 | self.bg_block_bitmap_csum_lo  # pyright: ignore[reportAny]
+            return bg_block_bitmap_csum_hi << 32 | bg_block_bitmap_csum_lo
 
-        return self.bg_block_bitmap_csum_lo  # pyright: ignore[reportAny]
+        return bg_block_bitmap_csum_lo
 
     @property
     def bg_inode_bitmap_csum(self) -> int:
+        bg_inode_bitmap_csum_lo: int = assert_type(self.bg_inode_bitmap_csum_lo, int)  # pyright: ignore[reportAny]
+        bg_inode_bitmap_csum_hi: int = assert_type(self.bg_inode_bitmap_csum_hi, int)  # pyright: ignore[reportAny]
         if self.volume.has_hi:
-            return self.bg_inode_bitmap_csum_hi << 32 | self.bg_inode_bitmap_csum_lo  # pyright: ignore[reportAny]
+            return bg_inode_bitmap_csum_hi << 32 | bg_inode_bitmap_csum_lo
 
-        return self.bg_inode_bitmap_csum_lo  # pyright: ignore[reportAny]
+        return bg_inode_bitmap_csum_lo
 
     @property
     def bg_itable_unused(self) -> int:
+        bg_itable_unused_lo: int = assert_type(self.bg_itable_unused_lo, int)  # pyright: ignore[reportAny]
+        bg_itable_unused_hi: int = assert_type(self.bg_itable_unused_hi, int)  # pyright: ignore[reportAny]
         if self.volume.has_hi:
-            return self.bg_itable_unused_hi << 32 | self.bg_itable_unused_lo  # pyright: ignore[reportAny]
+            return bg_itable_unused_hi << 32 | bg_itable_unused_lo
 
-        return self.bg_itable_unused_lo  # pyright: ignore[reportAny]
+        return bg_itable_unused_lo
 
     @property
     def bg_inode_table(self) -> int:
+        bg_inode_table_lo: int = assert_type(self.bg_inode_table_lo, int)  # pyright: ignore[reportAny]
+        bg_inode_table_hi: int = assert_type(self.bg_inode_table_hi, int)  # pyright: ignore[reportAny]
         if self.volume.has_hi:
-            return (self.bg_inode_table_hi << 32) + self.bg_inode_table_lo  # pyright: ignore[reportAny]
+            return (bg_inode_table_hi << 32) + bg_inode_table_lo
 
-        return self.bg_inode_table_lo  # pyright: ignore[reportAny]
+        return bg_inode_table_lo
 
     @property
     def superblock(self):
@@ -134,4 +155,5 @@ class BlockDescriptor(Ext4Struct):
 
     @Ext4Struct.expected_checksum.getter
     def expected_checksum(self) -> int:
-        return self.bg_checksum  # pyright: ignore[reportAny]
+        bg_checksum: int = assert_type(self.bg_checksum, int)  # pyright: ignore[reportAny]
+        return bg_checksum

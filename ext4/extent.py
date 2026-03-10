@@ -3,11 +3,13 @@ from ctypes import c_uint32
 from ctypes import c_uint16
 from ctypes import sizeof
 
+from typing import final
+from typing import TYPE_CHECKING
+
 from .struct import crc32c
 from .struct import Ext4Struct
 
-from typing import final
-from typing import TYPE_CHECKING
+from ._compat import assert_type
 
 if TYPE_CHECKING:
     from .inode import Inode
@@ -33,7 +35,8 @@ class ExtentBlocks(object):
 
     @property
     def ee_block(self) -> int:
-        return self.extent.ee_block  # pyright: ignore[reportAny]
+        ee_block: int = assert_type(self.extent.ee_block, int)  # pyright: ignore[reportAny]
+        return ee_block
 
     @property
     def ee_len(self) -> int:
@@ -85,7 +88,8 @@ class ExtentHeader(Ext4Struct):
         self.extents: list[Extent] = []
 
         offset = self.offset + self.size
-        for i in range(0, self.eh_entries):  # pyright: ignore[reportAny]
+        eh_entries: int = assert_type(self.eh_entries, int)  # pyright: ignore[reportAny]
+        for i in range(0, eh_entries):
             if self.eh_depth == 0:
                 self.extents.append(Extent(self, offset, i))
                 offset += sizeof(Extent)
@@ -114,14 +118,19 @@ class ExtentHeader(Ext4Struct):
 
     @Ext4Struct.magic.getter
     def magic(self) -> int:
-        return self.eh_magic  # pyright: ignore[reportAny]
+        eh_magic: int = assert_type(self.eh_magic, int)  # pyright: ignore[reportAny]
+        return eh_magic
 
     @Ext4Struct.expected_checksum.getter
     def expected_checksum(self) -> int | None:
-        if self.tail is None or not self.tail.et_checksum:  # pyright: ignore[reportAny]
+        if self.tail is None:
             return None
 
-        return self.tail.et_checksum  # pyright: ignore[reportAny]
+        et_checksum: int = assert_type(self.tail.et_checksum, int)  # pyright: ignore[reportAny]
+        if not et_checksum:
+            return None
+
+        return et_checksum
 
     @property
     def seed(self):
@@ -156,7 +165,9 @@ class ExtentIndex(Ext4Struct):
 
     @property
     def ei_leaf(self) -> int:
-        return self.ei_leaf_hi << 32 | self.ei_leaf_lo  # pyright: ignore[reportAny]
+        ei_leaf_lo: int = assert_type(self.ei_leaf_lo, int)  # pyright: ignore[reportAny]
+        ei_leaf_hi: int = assert_type(self.ei_leaf_hi, int)  # pyright: ignore[reportAny]
+        return ei_leaf_hi << 32 | ei_leaf_lo
 
     @property
     def tree(self):
@@ -186,7 +197,9 @@ class Extent(Ext4Struct):
 
     @property
     def ee_start(self) -> int:
-        return self.ee_start_hi << 32 | self.ee_start_lo  # pyright: ignore[reportAny]
+        ee_start_lo: int = assert_type(self.ee_start_lo, int)  # pyright: ignore[reportAny]
+        ee_start_hi: int = assert_type(self.ee_start_hi, int)  # pyright: ignore[reportAny]
+        return ee_start_hi << 32 | ee_start_lo
 
     @property
     def tree(self) -> "ExtentTree":

@@ -1,6 +1,7 @@
 import os
 from typing import Protocol
 from typing import runtime_checkable
+from typing import TypeVar
 
 # Added in python 3.12
 try:
@@ -28,4 +29,12 @@ class PeekableStream(ReadableStream, Protocol):
     def peek(self, size: int = 0, /) -> bytes: ...
 
 
-__all__ = ["override", "ReadableStream"]
+T = TypeVar("T")
+
+
+def assert_type(obj: T, T: type) -> T:
+    assert isinstance(obj, T), f"Object is: {type(obj)} not {T}"
+    return obj
+
+
+__all__ = ["override", "ReadableStream", "PeekableStream", "assert_type"]
