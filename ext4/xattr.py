@@ -6,7 +6,6 @@ from ctypes import c_uint8
 from ctypes import sizeof
 
 from typing import final
-from typing import override
 from typing import TYPE_CHECKING
 
 from collections.abc import Generator
@@ -16,6 +15,8 @@ from .enum import EXT4_FEATURE_INCOMPAT
 
 from .struct import Ext4Struct
 from .struct import crc32c
+
+from ._compat import override
 
 if TYPE_CHECKING:
     from .inode import Inode

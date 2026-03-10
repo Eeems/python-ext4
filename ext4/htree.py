@@ -9,7 +9,6 @@ from ctypes import memmove
 from ctypes import LittleEndianStructure
 
 from typing import final
-from typing import override
 from typing import cast
 from typing import TYPE_CHECKING
 
@@ -18,6 +17,7 @@ from collections.abc import Generator
 from .struct import Ext4Struct
 from .struct import MagicError
 from .enum import DX_HASH
+from ._compat import override
 
 if TYPE_CHECKING:
     from .inode import Directory

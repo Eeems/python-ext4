@@ -7,11 +7,11 @@ from ctypes import memmove
 from ctypes import addressof
 
 from typing import final
-from typing import override
 from typing import TYPE_CHECKING
 
 from .struct import Ext4Struct
 from .enum import EXT4_FT
+from ._compat import override
 
 if TYPE_CHECKING:
     from .inode import Directory

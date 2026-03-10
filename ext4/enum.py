@@ -4,10 +4,11 @@ from ctypes import c_uint16
 from ctypes import c_uint32
 
 from typing import cast
-from typing import override
 from typing import Any
 from typing import final
 from typing import TYPE_CHECKING
+
+from ._compat import override
 
 if TYPE_CHECKING:
     from .struct import SimpleCData
