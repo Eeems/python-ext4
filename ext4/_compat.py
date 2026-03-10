@@ -2,6 +2,7 @@ import os
 from typing import Protocol
 from typing import runtime_checkable
 from typing import TypeVar
+from typing import Any
 
 # Added in python 3.12
 try:
@@ -9,7 +10,6 @@ try:
 
 except ImportError:
     from typing import Callable
-    from typing import Any
 
     def override(fn: Callable[..., Any]):  # pyright: ignore[reportExplicitAny]
         return fn
