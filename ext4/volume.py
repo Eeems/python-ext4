@@ -166,7 +166,7 @@ class Volume(object):
             seek = self.cursor + offset
 
         elif mode == io.SEEK_END:
-            seek = len(self) - offset
+            seek = len(self) + offset
 
         else:
             raise NotImplementedError(f"Seek mode {mode} not implemented")
@@ -174,12 +174,17 @@ class Volume(object):
         if seek < 0:
             raise OSError(errno.EINVAL, os.strerror(errno.EINVAL))
 
+        if seek > len(self):
+            seek = len(self)
+
         self.cursor = seek
         return self.cursor
 
     def read(self, size: int) -> bytes:
         _ = self.stream.seek(self.offset + self.cursor)
-        return self.stream.read(size)
+        data = self.stream.read(size)
+        self.cursor += len(data)
+        return data
 
     def peek(self, size: int) -> bytes:
         _ = self.stream.seek(self.offset + self.cursor)
