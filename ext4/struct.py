@@ -80,7 +80,7 @@ class Ext4Struct(LittleEndianStructure):
         assert isinstance(cls._fields_, list)
         assert not [x for x in cls._fields_ if not isinstance(x, tuple)]
         for _name, _type in cast(list[tuple[str, SimpleCData]], cls._fields_):
-            if name == name:
+            if _name == name:
                 return _type
 
         return None
