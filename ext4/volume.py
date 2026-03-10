@@ -141,7 +141,7 @@ class Volume(object):
 
     @property
     def uuid(self):
-        s_uuid: bytes = assert_type(self.superblock.s_uuid, bytes)  # pyright: ignore[reportAny]
+        s_uuid: bytes = assert_type(bytes(self.superblock.s_uuid), bytes)  # pyright: ignore[reportAny]
         return UUID(bytes=s_uuid)
 
     @property

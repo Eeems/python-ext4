@@ -228,7 +228,7 @@ class Superblock(Ext4Struct):
             s_checksum_seed: int = assert_type(self.s_checksum_seed, int)  # pyright: ignore[reportAny]
             return s_checksum_seed
 
-        s_uuid: bytes = assert_type(self.s_uuid, bytes)  # pyright: ignore[reportAny]
+        s_uuid: bytes = assert_type(bytes(self.s_uuid), bytes)  # pyright: ignore[reportAny]
         return crc32c(s_uuid)
 
     @property
