@@ -1,4 +1,6 @@
 # pyright: reportImportCycles=false
+import warnings
+
 from ctypes import c_uint32
 from ctypes import c_uint16
 from ctypes import c_uint8
@@ -50,6 +52,8 @@ class DotDirectoryEntry2(LittleEndianStructureWithVolume):
         assert self.volume is not None
         if not self.volume.ignore_magic:
             raise MagicError(message)
+
+        warnings.warn(message, RuntimeWarning)
 
 
 @final
