@@ -43,7 +43,7 @@ class DotDirectoryEntry2(LittleEndianStructureWithVolume):
 
     def verify(self) -> None:
         name = assert_cast(self.name, str)  # pyright: ignore[reportAny]
-        if name in (b".\0\0\0", b".\0\0\0"):
+        if name in (b".\0\0\0", b"..\0\0\0"):
             return
 
         message = f"{self} dot or dotdot entry name invalid! actual={name}"
