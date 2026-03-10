@@ -101,6 +101,9 @@ for img_file in ("test32.ext4", "test64.ext4"):
         b = inode.open()
         _assert("isinstance(b, ext4.BlockIO)")
         _assert("b.readable()")
+        _assert("not b.peek(0)")
+        size = volume.block_size + 1
+        _assert(f"len(b.peek({size})) == {size}")
         _assert("b.seekable()")
         _assert("b.seek(1) == 1")
         _assert("b.seek(0) == 0")

@@ -5,8 +5,9 @@ from ._compat import override
 
 
 class BlockIOBlocks(object):
-    def __init__(self, blockio):
-        self.blockio = blockio
+    def __init__(self, blockio: "BlockIO"):
+        self.blockio: BlockIO = blockio
+        self._null_block: bytearray = bytearray(self.block_size)
 
     @property
     def block_size(self):
@@ -37,10 +38,16 @@ class BlockIOBlocks(object):
 
     def __getitem__(self, ee_block):
         for extent in self.blockio.extents:
-            if ee_block in extent.blocks:
-                return extent.blocks[ee_block]
+            if ee_block not in extent.blocks:
+                continue
 
-        return bytearray(self.block_size)
+            block = extent.blocks[ee_block]
+            if block is None:
+                break
+
+            return block
+
+        return self._null_block
 
 
 class BlockIO(io.RawIOBase):
@@ -112,16 +119,19 @@ class BlockIO(io.RawIOBase):
         start_index = self.cursor // self.block_size
         end_index = (self.cursor + size - 1) // self.block_size
         start_offset = self.cursor % self.block_size
-        data = b""
+        end_offset = ((self.cursor + size - 1) % self.block_size) + 1
+        blocks_list: list[memoryview] = []
+
         for i in range(start_index, end_index + 1):
-            block = self.blocks[i]
-            if block is None:
-                block = bytearray(self.block_size)
-
+            block: bytes | bytearray = self.blocks[i]
+            view = memoryview(block)
             if i == start_index:
-                block = block[start_offset:]
+                view = view[start_offset:]
 
-            data += block
+            if i == end_index:
+                trim = end_offset - (start_offset if i == start_index else 0)
+                view = view[:trim]
 
-        data = data[:size]
-        return data
+            blocks_list.append(view)
+
+        return b"".join(blocks_list)

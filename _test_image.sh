@@ -4,8 +4,10 @@ set -e
 tmp_dir=$(mktemp -d)
 trap "rm -r \"$tmp_dir\"" EXIT
 echo "hello world" > "$tmp_dir"/test.txt
-for i in {1..100};do
+for i in {1..1000};do
   echo "hello world" >> "$tmp_dir"/test.txt
+done
+for i in {1..100};do
   echo "hello world$i" > "$tmp_dir"/test$i.txt
   for j in {1..20};do
     setfattr -n user.name$j -v value${i}_$j "$tmp_dir"/test$i.txt
