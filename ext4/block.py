@@ -38,8 +38,14 @@ class BlockIOBlocks(object):
 
     def __getitem__(self, ee_block):
         for extent in self.blockio.extents:
-            if ee_block in extent.blocks:
-                return extent.blocks[ee_block] or self._null_block
+            if ee_block not in extent.blocks:
+                continue
+
+            block = extent.blocks[ee_block]
+            if block is None:
+                break
+
+            return block
 
         return self._null_block
 
@@ -113,6 +119,7 @@ class BlockIO(io.RawIOBase):
         start_index = self.cursor // self.block_size
         end_index = (self.cursor + size - 1) // self.block_size
         start_offset = self.cursor % self.block_size
+        end_offset = ((self.cursor + size - 1) % self.block_size) + 1
         blocks_list: list[memoryview] = []
 
         for i in range(start_index, end_index + 1):
@@ -121,6 +128,10 @@ class BlockIO(io.RawIOBase):
             if i == start_index:
                 view = view[start_offset:]
 
+            if i == end_index:
+                trim = end_offset - (start_offset if i == start_index else 0)
+                view = view[:trim]
+
             blocks_list.append(view)
 
-        return b"".join(blocks_list)[:size]
+        return b"".join(blocks_list)
