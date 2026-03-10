@@ -25,7 +25,6 @@ SimpleCData = (
     | ctypes.c_float
     | ctypes.c_double
     | ctypes.c_longdouble
-    | ctypes.c_double_complex
     | ctypes.c_float_complex
     | ctypes.c_longdouble_complex
     | ctypes.c_longlong
