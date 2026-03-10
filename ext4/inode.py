@@ -328,7 +328,7 @@ class Inode(Ext4Struct):
 
     @property
     def is_inline(self) -> bool:
-        i_flags: EXT4_OS = assert_cast(self.i_flags, EXT4_FL)  # pyright: ignore[reportAny]
+        i_flags: EXT4_FL = assert_cast(self.i_flags, EXT4_FL)  # pyright: ignore[reportAny]
         return (i_flags & EXT4_FL.EXTENTS) == 0
 
     @property
