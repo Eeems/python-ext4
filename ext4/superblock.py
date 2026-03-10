@@ -149,10 +149,12 @@ class Superblock(Ext4Struct):
             - s_reserved_gdt_blocks
             - s_overhead_blocks
         )
+        # s_blocks_count_lo: int = assert_cast(self.s_blocks_count_lo, int)
+        # s_blocks_count_hi: int = assert_cast(self.s_blocks_count_hi, int)
         # if self.has_hi:
-        #     return self.s_blocks_count_hi << 32 | self.s_blocks_count_lo
+        #     return s_blocks_count_hi << 32 | s_blocks_count_lo
 
-        # return self.s_blocks_count_lo
+        # return s_blocks_count_lo
 
     @property
     def s_r_blocks_count(self) -> int:
