@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
-import ext4  # pyright: ignore[reportImplicitRelativeImport]
+import ext4
 
 from typing import cast
 from typing import Callable

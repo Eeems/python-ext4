@@ -49,7 +49,11 @@ ${VENV_BIN_ACTIVATE}: requirements.txt
 	@echo "Setting up development virtual env in .venv"
 	$(PYTHON) -m venv .venv
 	. ${VENV_BIN_ACTIVATE}; \
-	$(PYTHON) -m pip install wheel build ruff; \
+	$(PYTHON) -m pip install \
+	  wheel \
+	  build \
+	  ruff \
+	  basedpyright; \
 	$(PYTHON) -m pip install \
 	    -r requirements.txt
 
@@ -60,11 +64,13 @@ all: release
 
 lint: $(VENV_BIN_ACTIVATE)
 	. $(VENV_BIN_ACTIVATE); \
-	$(PYTHON) -m ruff check
+	$(PYTHON) -m ruff check; \
+	$(PYTHON) -m basedpyright
 
 lint-fix: $(VENV_BIN_ACTIVATE)
 	. $(VENV_BIN_ACTIVATE); \
-	$(PYTHON) -m ruff check --fix
+	$(PYTHON) -m ruff check --fix; \
+	$(PYTHON) -m basedpyright
 
 format: $(VENV_BIN_ACTIVATE)
 	. $(VENV_BIN_ACTIVATE); \

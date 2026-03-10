@@ -1,7 +1,12 @@
+# pyright: reportImportCycles=false
 import io
 import errno
 
 from ._compat import override
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .inode import Inode
 
 
 class BlockIOBlocks(object):
@@ -17,43 +22,27 @@ class BlockIOBlocks(object):
     def volume(self):
         return self.blockio.inode.volume
 
-    @property
-    def ee_start(self):
-        return self.blockio.ee_start
-
-    @property
-    def ee_block(self):
-        return self.blockio.ee_block
-
-    @property
-    def ee_len(self):
-        return self.blockio.ee_len
-
-    def __contains__(self, ee_block):
+    def __contains__(self, ee_block: int):
         for extent in self.blockio.extents:
             if ee_block in extent.blocks:
                 return True
 
         return False
 
-    def __getitem__(self, ee_block):
+    def __getitem__(self, ee_block: int):
         for extent in self.blockio.extents:
             if ee_block not in extent.blocks:
                 continue
 
-            block = extent.blocks[ee_block]
-            if block is None:
-                break
-
-            return block
+            return extent.blocks[ee_block]
 
         return self._null_block
 
 
 class BlockIO(io.RawIOBase):
-    def __init__(self, inode):
+    def __init__(self, inode: "Inode"):
         super().__init__()
-        self.inode = inode
+        self.inode: "Inode" = inode
         self.cursor: int = 0
         self.blocks: BlockIOBlocks = BlockIOBlocks(self)
 

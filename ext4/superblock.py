@@ -1,8 +1,12 @@
+# pyright: reportImportCycles=false
 from ctypes import c_uint64
 from ctypes import c_uint32
 from ctypes import c_uint16
 from ctypes import c_uint8
 from ctypes import c_ubyte
+
+from typing import final
+from typing import TYPE_CHECKING
 
 from .enum import EXT4_FS
 from .enum import EXT4_ERRORS
@@ -17,17 +21,22 @@ from .enum import EXT2_FLAGS
 from .enum import EXT4_CHKSUM
 from .enum import EXT4_MOUNT
 from .enum import FS_ENCRYPTION_MODE
+
 from .struct import Ext4Struct
 from .struct import crc32c
 
+if TYPE_CHECKING:
+    from .volume import Volume
 
+
+@final
 class Superblock(Ext4Struct):
     _pack_ = 1
     # _anonymous_ = (
     #     "s_reserved_pad",
     #     "s_reserved",
     # )
-    _fields_ = [
+    _fields_ = [  # pyright: ignore[reportUnknownVariableType]
         ("s_inodes_count", c_uint32),
         ("s_blocks_count_lo", c_uint32),
         ("s_r_blocks_count_lo", c_uint32),
@@ -107,12 +116,12 @@ class Superblock(Ext4Struct):
         ("s_last_error_line", c_uint32),
         ("s_last_error_block", c_uint64),
         ("s_last_error_func", c_uint8 * 32),
-        ("s_mount_opts", EXT4_MOUNT * 64),
+        ("s_mount_opts", EXT4_MOUNT * 64),  # pyright: ignore[reportOperatorIssue]
         ("s_usr_quota_inum", c_uint32),
         ("s_grp_quota_inum", c_uint32),
         ("s_overhead_blocks", c_uint32),
         ("s_backup_bgs", c_uint32 * 2),
-        ("s_encrypt_algos", FS_ENCRYPTION_MODE * 4),
+        ("s_encrypt_algos", FS_ENCRYPTION_MODE * 4),  # pyright: ignore[reportOperatorIssue]
         ("s_encrypt_pw_salt", c_uint8 * 16),
         ("s_lpf_ino", c_uint32),
         ("s_prj_quota_inum", c_uint32),
@@ -121,19 +130,19 @@ class Superblock(Ext4Struct):
         ("s_checksum", c_uint32),
     ]
 
-    def __init__(self, volume, _=None):
+    def __init__(self, volume: "Volume", _=None):
         super().__init__(volume, 0x400)
 
     @property
     def has_hi(self) -> bool:
-        return (self.s_feature_incompat & EXT4_FEATURE_INCOMPAT.IS64BIT) != 0
+        return (self.s_feature_incompat & EXT4_FEATURE_INCOMPAT.IS64BIT) != 0  # pyright: ignore[reportAny]
 
     @property
     def s_blocks_count(self) -> int:
-        return (
-            (self.s_blocks_per_group) * len(self.volume.group_descriptors)
-            - self.s_reserved_gdt_blocks
-            - self.s_overhead_blocks
+        return (  # pyright: ignore[reportAny]
+            (self.s_blocks_per_group) * len(self.volume.group_descriptors)  # pyright: ignore[reportAny]
+            - self.s_reserved_gdt_blocks  # pyright: ignore[reportAny]
+            - self.s_overhead_blocks  # pyright: ignore[reportAny]
         )
         # if self.has_hi:
         #     return self.s_blocks_count_hi << 32 | self.s_blocks_count_lo
@@ -141,34 +150,34 @@ class Superblock(Ext4Struct):
         # return self.s_blocks_count_lo
 
     @property
-    def s_r_blocks_count(self):
+    def s_r_blocks_count(self) -> int:
         if self.has_hi:
-            return self.s_r_blocks_count_hi << 32 | self.s_r_blocks_count_lo
+            return self.s_r_blocks_count_hi << 32 | self.s_r_blocks_count_lo  # pyright: ignore[reportAny]
 
-        return self.s_r_blocks_count_lo
+        return self.s_r_blocks_count_lo  # pyright: ignore[reportAny]
 
     @property
-    def s_free_blocks_count(self):
+    def s_free_blocks_count(self) -> int:
         if self.has_hi:
-            return self.s_free_blocks_count_hi << 32 | self.s_free_blocks_count_lo
+            return self.s_free_blocks_count_hi << 32 | self.s_free_blocks_count_lo  # pyright: ignore[reportAny]
 
-        return self.s_free_blocks_count_lo
+        return self.s_free_blocks_count_lo  # pyright: ignore[reportAny]
 
     @property
-    def metadata_csum(self):
-        return self.s_feature_ro_compat & EXT4_FEATURE_RO_COMPAT.METADATA_CSUM != 0
+    def metadata_csum(self) -> int:
+        return self.s_feature_ro_compat & EXT4_FEATURE_RO_COMPAT.METADATA_CSUM != 0  # pyright: ignore[reportAny]
 
     @Ext4Struct.expected_magic.getter
-    def expected_magic(self):
+    def expected_magic(self) -> int:
         return 0xEF53
 
     @Ext4Struct.magic.getter
-    def magic(self):
-        return self.s_magic
+    def magic(self) -> int:
+        return self.s_magic  # pyright: ignore[reportAny]
 
     @Ext4Struct.expected_checksum.getter
     def expected_checksum(self):
-        return self.s_checksum if self.metadata_csum else None
+        return self.s_checksum if self.metadata_csum else None  # pyright: ignore[reportAny]
 
     @Ext4Struct.checksum.getter
     def checksum(self):
@@ -180,14 +189,19 @@ class Superblock(Ext4Struct):
 
     @property
     def seed(self):
+        assert isinstance(self.s_feature_incompat, EXT4_FEATURE_INCOMPAT)  # pyright: ignore[reportAny]
         if self.s_feature_incompat & EXT4_FEATURE_INCOMPAT.CSUM_SEED != 0:
+            assert isinstance(self.s_checksum_seed, int)  # pyright: ignore[reportAny]
             return self.s_checksum_seed
 
+        assert isinstance(self.s_uuid, int)  # pyright: ignore[reportAny]
         return crc32c(bytes(self.s_uuid))
 
     @property
-    def desc_size(self):
+    def desc_size(self) -> int:
+        assert isinstance(self.s_feature_incompat, EXT4_FEATURE_INCOMPAT)  # pyright: ignore[reportAny]
         if self.s_feature_incompat & EXT4_FEATURE_INCOMPAT.IS64BIT != 0:
+            assert isinstance(self.s_desc_size, int)  # pyright: ignore[reportAny]
             return self.s_desc_size
 
         return 32

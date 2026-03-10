@@ -1,3 +1,4 @@
+# pyright: reportImportCycles=false
 from __future__ import annotations
 
 import io
@@ -10,6 +11,8 @@ from ctypes import c_uint16
 from ctypes import sizeof
 
 from typing import cast
+from typing import final
+from typing import TYPE_CHECKING
 
 from ._compat import override
 from ._compat import ReadableStream
@@ -26,6 +29,9 @@ from .enum import EXT4_FEATURE_INCOMPAT
 from .enum import MODE
 from .enum import EXT4_FT
 
+from .extent import Extent
+from .extent import ExtentHeader
+from .extent import ExtentIndex
 from .extent import ExtentTree
 
 from .block import BlockIO
@@ -40,6 +46,9 @@ from .htree import DXRoot
 from .xattr import ExtendedAttributeIBodyHeader
 from .xattr import ExtendedAttributeHeader
 
+if TYPE_CHECKING:
+    from .volume import Volume
+
 
 class OpenDirectoryError(Exception):
     pass
@@ -49,6 +58,7 @@ class InodeError(Exception):
     pass
 
 
+@final
 class Linux1(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
@@ -56,6 +66,7 @@ class Linux1(LittleEndianStructure):
     ]
 
 
+@final
 class Hurd1(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
@@ -63,6 +74,7 @@ class Hurd1(LittleEndianStructure):
     ]
 
 
+@final
 class Masix1(LittleEndianStructure):
     _pack_ = 1
     # _anonymous_ = ("m_i_reserved1",)
@@ -71,6 +83,7 @@ class Masix1(LittleEndianStructure):
     ]
 
 
+@final
 class Osd1(Union):
     _pack_ = 1
     _fields_ = [
@@ -80,6 +93,7 @@ class Osd1(Union):
     ]
 
 
+@final
 class Linux2(LittleEndianStructure):
     _pack_ = 1
     # _anonymous_ = ("l_i_reserved",)
@@ -93,6 +107,7 @@ class Linux2(LittleEndianStructure):
     ]
 
 
+@final
 class Hurd2(LittleEndianStructure):
     _pack_ = 1
     # _anonymous_ = ("h_i_reserved1",)
@@ -105,6 +120,7 @@ class Hurd2(LittleEndianStructure):
     ]
 
 
+@final
 class Masix2(LittleEndianStructure):
     _pack_ = 1
     # _anonymous_ = ("h_i_reserved1", "m_i_reserved2")
@@ -115,6 +131,7 @@ class Masix2(LittleEndianStructure):
     ]
 
 
+@final
 class Osd2(Union):
     _pack_ = 1
     _fields_ = [
@@ -125,9 +142,10 @@ class Osd2(Union):
 
 
 class Inode(Ext4Struct):
-    EXT4_GOOD_OLD_INODE_SIZE = EXT2_GOOD_OLD_INODE_SIZE = 128
-    _pack_ = 1
-    _fields_ = [
+    EXT4_GOOD_OLD_INODE_SIZE: int = 128
+    EXT2_GOOD_OLD_INODE_SIZE: int = 128
+    _pack_ = 1  # pyright: ignore[reportUnannotatedClassAttribute]
+    _fields_ = [  # pyright: ignore[reportUnannotatedClassAttribute]
         ("i_mode", MODE),
         ("i_uid", c_uint16),
         ("i_size_lo", c_uint32),
@@ -157,42 +175,45 @@ class Inode(Ext4Struct):
         ("i_projid", c_uint32),
     ]
 
-    def __new__(cls, volume, offset: int, i_no: int):
+    def __new__(cls, volume: "Volume", offset: int, i_no: int):
         if cls is not Inode:
             return super().__new__(cls)
 
         _ = volume.seek(offset + Inode.i_mode.offset)
-        file_type = (
-            Inode.field_type("i_mode").from_buffer_copy(volume.read(Inode.i_mode.size))
-            & 0xF000
+        file_type: MODE = cast(
+            MODE,
+            Inode.field_type("i_mode").from_buffer_copy(  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportOptionalMemberAccess]
+                volume.read(Inode.i_mode.size)
+            )
+            & 0xF000,
         )
         if file_type == MODE.IFIFO:
-            return super().__new__(Fifo)
+            return super().__new__(Fifo)  # pyright: ignore[reportArgumentType]
 
         if file_type == MODE.IFDIR:
-            return super().__new__(Directory)
+            return super().__new__(Directory)  # pyright: ignore[reportArgumentType]
 
         if file_type == MODE.IFREG:
-            return super().__new__(File)
+            return super().__new__(File)  # pyright: ignore[reportArgumentType]
 
         if file_type == MODE.IFLNK:
-            return super().__new__(SymbolicLink)
+            return super().__new__(SymbolicLink)  # pyright: ignore[reportArgumentType]
 
         if file_type == MODE.IFCHR:
-            return super().__new__(CharacterDevice)
+            return super().__new__(CharacterDevice)  # pyright: ignore[reportArgumentType]
 
         if file_type == MODE.IFBLK:
-            return super().__new__(BlockDevice)
+            return super().__new__(BlockDevice)  # pyright: ignore[reportArgumentType]
 
         if file_type == MODE.IFSOCK:
-            return super().__new__(Socket)
+            return super().__new__(Socket)  # pyright: ignore[reportArgumentType]
 
         raise InodeError(f"Unknown file type 0x{file_type:X}")
 
-    def __init__(self, volume, offset: int, i_no: int):
+    def __init__(self, volume: "Volume", offset: int, i_no: int):
         self.i_no: int = i_no
         super().__init__(volume, offset)
-        self.tree: ExtentTree = ExtentTree(self)
+        self.tree: ExtentTree | None = ExtentTree(self)
 
     @property
     def extra_inode_data(self) -> bytes:
@@ -200,9 +221,9 @@ class Inode(Ext4Struct):
             return b""
 
         size = sizeof(self)
-        assert size == self.EXT2_GOOD_OLD_INODE_SIZE + self.i_extra_isize
+        assert size == self.EXT2_GOOD_OLD_INODE_SIZE + self.i_extra_isize  # pyright: ignore[reportAny]
         _ = self.volume.seek(self.offset + size)
-        return self.volume.read(self.superblock.s_inode_size - size)
+        return self.volume.read(self.superblock.s_inode_size - size)  # pyright: ignore[reportAny]
 
     @property
     def superblock(self):
@@ -214,35 +235,35 @@ class Inode(Ext4Struct):
 
     @property
     def i_size(self) -> int:
-        return self.i_size_high << 32 | self.i_size_lo
+        return self.i_size_high << 32 | self.i_size_lo  # pyright: ignore[reportAny]
 
     @property
     def i_file_acl(self) -> int:
-        return self.osd2.linux2.l_i_file_acl_high << 32 | self.i_file_acl_lo
+        return self.osd2.linux2.l_i_file_acl_high << 32 | self.i_file_acl_lo  # pyright: ignore[reportAny]
 
     @property
     def has_hi(self) -> bool:
-        return self.superblock.s_inode_size > self.EXT2_GOOD_OLD_INODE_SIZE
+        return self.superblock.s_inode_size > self.EXT2_GOOD_OLD_INODE_SIZE  # pyright: ignore[reportAny]
 
     @property
     def fits_in_hi(self) -> bool:
         return (
             self.has_hi
             and Inode.i_checksum_hi.offset + Inode.i_checksum_hi.size
-            <= self.EXT2_GOOD_OLD_INODE_SIZE + self.i_extra_isize
+            <= self.EXT2_GOOD_OLD_INODE_SIZE + self.i_extra_isize  # pyright: ignore[reportAny]
         )
 
     @property
     def seed(self) -> int:
         seed = crc32c(self.i_no.to_bytes(4, "little"), self.volume.seed)
         return crc32c(
-            self.i_generation.to_bytes(Inode.i_generation.size, "little"),
+            self.i_generation.to_bytes(Inode.i_generation.size, "little"),  # pyright: ignore[reportAny]
             seed,
         )
 
     @Ext4Struct.checksum.getter
     def checksum(self) -> int | None:
-        if self.superblock.s_creator_os != EXT4_OS.LINUX:
+        if self.superblock.s_creator_os != EXT4_OS.LINUX:  # pyright: ignore[reportAny]
             return None
 
         data = bytes(self)
@@ -267,7 +288,7 @@ class Inode(Ext4Struct):
                 data[offset:],
                 csum,
             )
-            if self.superblock.s_inode_size - len(data) > 0:
+            if self.superblock.s_inode_size - len(data) > 0:  # pyright: ignore[reportAny]
                 csum = crc32c(self.extra_inode_data, csum)
 
         if not self.has_hi:
@@ -277,36 +298,39 @@ class Inode(Ext4Struct):
 
     @Ext4Struct.expected_checksum.getter
     def expected_checksum(self) -> int | None:
-        if self.superblock.s_creator_os != EXT4_OS.LINUX:
+        if self.superblock.s_creator_os != EXT4_OS.LINUX:  # pyright: ignore[reportAny]
             return None
 
-        provided_csum = 0
-        provided_csum |= self.osd2.linux2.l_i_checksum_lo
+        provided_csum: int = 0
+        provided_csum |= self.osd2.linux2.l_i_checksum_lo  # pyright: ignore[reportAny]
         if self.has_hi:
-            provided_csum |= self.i_checksum_hi << 16
+            provided_csum |= self.i_checksum_hi << 16  # pyright: ignore[reportAny]
 
         return provided_csum
 
     @override
-    def validate(self):
+    def validate(self) -> None:
         super().validate()
         if self.tree is not None:
             self.tree.validate()
 
     @property
     def is_inline(self) -> bool:
-        return (self.i_flags & EXT4_FL.EXTENTS) == 0
+        return (self.i_flags & EXT4_FL.EXTENTS) == 0  # pyright: ignore[reportAny]
 
     @property
-    def extents(self):
+    def extents(self) -> list[Extent]:
+        assert self.tree is not None
         return self.tree.extents
 
     @property
-    def headers(self):
+    def headers(self) -> list[ExtentHeader]:
+        assert self.tree is not None
         return self.tree.headers
 
     @property
-    def indices(self):
+    def indices(self) -> list[ExtentIndex]:
+        assert self.tree is not None
         return self.tree.indices
 
     def _open(
@@ -316,8 +340,8 @@ class Inode(Ext4Struct):
             raise NotImplementedError()
 
         if self.is_inline:
-            self.volume.seek(self.offset + Inode.i_block.offset)
-            data = cast(bytes, self.volume.read(self.i_size))
+            _ = self.volume.seek(self.offset + Inode.i_block.offset)
+            data = self.volume.read(self.i_size)
             return io.BytesIO(data)
 
         return BlockIO(self)
@@ -327,15 +351,17 @@ class Inode(Ext4Struct):
         mode: str = "rb",  # pyright: ignore[reportUnusedParameter]
         encoding: None = None,  # pyright: ignore[reportUnusedParameter]
         newline: None = None,  # pyright: ignore[reportUnusedParameter]
-    ) -> io.RawIOBase:
+    ) -> ReadableStream:
         raise NotImplementedError()
 
     @property
     def xattrs(
         self,
     ) -> Generator[tuple[str, bytes], None, None]:
-        inline_offset = self.offset + self.EXT2_GOOD_OLD_INODE_SIZE + self.i_extra_isize
-        inline_size = self.offset + self.superblock.s_inode_size - inline_offset
+        inline_offset: int = (  # pyright: ignore[reportAny]
+            self.offset + self.EXT2_GOOD_OLD_INODE_SIZE + self.i_extra_isize  # pyright: ignore[reportAny]
+        )
+        inline_size: int = self.offset + self.superblock.s_inode_size - inline_offset  # pyright: ignore[reportAny]
         if inline_size > sizeof(ExtendedAttributeIBodyHeader):
             try:
                 header = ExtendedAttributeIBodyHeader(self, inline_offset, inline_size)
@@ -379,7 +405,7 @@ class File(Inode):
     @override
     def open(
         self, mode: str = "rb", encoding: None = None, newline: None = None
-    ) -> io.RawIOBase:
+    ) -> ReadableStream:
         return self._open(mode, encoding, newline)
 
 
@@ -389,11 +415,11 @@ class SymbolicLink(Inode):
 
 
 class Directory(Inode):
-    def __init__(self, volume, offset: int, i_no: int):
+    def __init__(self, volume: "Volume", offset: int, i_no: int):
         super().__init__(volume, offset, i_no)
         self._dirents: None | list[DirectoryEntry | DirectoryEntry2] = None
         if self.is_htree:
-            self.htree = DXRoot(self)
+            self.htree: DXRoot | None = DXRoot(self)
 
     @override
     def verify(self):
@@ -407,19 +433,19 @@ class Directory(Inode):
 
     @property
     def has_filetype(self) -> bool:
-        return self.superblock.s_feature_incompat & EXT4_FEATURE_INCOMPAT.FILETYPE != 0
+        return self.superblock.s_feature_incompat & EXT4_FEATURE_INCOMPAT.FILETYPE != 0  # pyright: ignore[reportAny]
 
     @property
     def is_htree(self) -> bool:
-        return self.i_flags & EXT4_FL.INDEX != 0
+        return self.i_flags & EXT4_FL.INDEX != 0  # pyright: ignore[reportAny]
 
     @property
     def is_casefolded(self) -> bool:
-        return self.i_flags & EXT4_FL.CASEFOLD != 0
+        return self.i_flags & EXT4_FL.CASEFOLD != 0  # pyright: ignore[reportAny]
 
     @property
     def is_encrypted(self) -> bool:
-        return self.i_flags & EXT4_FL.ENCRYPT != 0
+        return self.i_flags & EXT4_FL.ENCRYPT != 0  # pyright: ignore[reportAny]
 
     @property
     def hash_in_dirent(self) -> bool:
@@ -434,36 +460,36 @@ class Directory(Inode):
 
         _type = DirectoryEntry2 if self.has_filetype else DirectoryEntry
         dirents: list[DirectoryEntry | DirectoryEntry2] = []
-        offset = 0
+        offset: int = 0
         data = self._open().read()
         while offset < len(data):
             dirent = _type(self, offset)
-            if not dirent.rec_len:
+            if not dirent.rec_len:  # pyright: ignore[reportAny]
                 # How did this happen?
                 offset += _type.name.offset  # + EXT4_DIR_ROUND
                 continue
 
-            if not dirent.inode or not dirent.name_len:
-                offset += dirent.rec_len
+            if not dirent.inode or not dirent.name_len:  # pyright: ignore[reportAny]
+                offset += dirent.rec_len  # pyright: ignore[reportAny]
                 continue
 
-            expected_rec_len = _type.name.offset + dirent.name_len + EXT4_DIR_ROUND
+            expected_rec_len: int = _type.name.offset + dirent.name_len + EXT4_DIR_ROUND  # pyright: ignore[reportAny]
             if not dirent.is_fake_entry and self.hash_in_dirent:
                 expected_rec_len += sizeof(DirectoryEntryHash)
 
             expected_rec_len &= ~EXT4_DIR_ROUND
 
-            if dirent.rec_len < expected_rec_len:
+            if dirent.rec_len < expected_rec_len:  # pyright: ignore[reportAny]
                 warnings.warn(
                     "Directory entry is too small for name length"
                     + f", expected={expected_rec_len}"
-                    + f", actual={dirent.rec_len}",
+                    + f", actual={dirent.rec_len}",  # pyright: ignore[reportAny]
                     RuntimeWarning,
                 )
                 break
 
-            offset += dirent.rec_len
-            if not self.has_filetype or dirent.file_type != EXT4_FT.UNKNOWN:
+            offset += dirent.rec_len  # pyright: ignore[reportAny]
+            if not self.has_filetype or dirent.file_type != EXT4_FT.UNKNOWN:  # pyright: ignore[reportAny]
                 dirents.append(dirent)
                 yield dirent
 
@@ -472,8 +498,11 @@ class Directory(Inode):
     def _get_file_type(self, dirent: DirectoryEntry | DirectoryEntry2):
         offset = self.volume.inodes.offset(dirent.inode)
         _ = self.volume.seek(offset + Inode.i_mode.offset)
-        i_mode = Inode.field_type("i_mode").from_buffer_copy(
-            self.volume.read(Inode.i_mode.size)
+        i_mode = cast(
+            MODE,
+            Inode.field_type("i_mode").from_buffer_copy(  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportOptionalMemberAccess]
+                self.volume.read(Inode.i_mode.size)
+            ),
         )
         if i_mode & MODE.IFIFO != 0:
             return EXT4_FT.FIFO
@@ -503,7 +532,7 @@ class Directory(Inode):
     def opendir(self):
         for dirent in self._opendir():
             if isinstance(dirent, DirectoryEntry2):
-                file_type = dirent.file_type
+                file_type: int = dirent.file_type  # pyright: ignore[reportAny]
                 if file_type == EXT4_FT.DIR_CSUM:
                     continue
 

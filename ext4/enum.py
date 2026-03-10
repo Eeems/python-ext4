@@ -1,84 +1,104 @@
+# pyright: reportImportCycles=false
 from ctypes import c_uint8
 from ctypes import c_uint16
 from ctypes import c_uint32
 
+from typing import cast
+from typing import override
+from typing import Any
+from typing import final
+from typing import TYPE_CHECKING
 
-def TypedEnumerationType(_type):
-    class EnumerationType(type(_type)):  # type: ignore
-        def __new__(metacls, name, bases, data):
+if TYPE_CHECKING:
+    from .struct import SimpleCData
+
+
+def TypedEnumerationType(_type: type["SimpleCData"]):
+    class EnumerationType(type(_type)):  # type: ignore  # pyright: ignore[reportGeneralTypeIssues, reportUntypedBaseClass]
+        def __new__(cls, name: str, bases: tuple[type, ...], data: dict[str, Any]):  # pyright: ignore[reportExplicitAny, reportUnknownParameterType]
+            _members_: dict[str, Any]  # pyright: ignore[reportExplicitAny]
             if "_members_" not in data:
                 _members_ = {}
-                for key, value in data.items():
+                for key, value in data.items():  # pyright: ignore[reportAny]
                     if not key.startswith("_"):
                         _members_[key] = value
 
                 data["_members_"] = _members_
 
             else:
-                _members_ = data["_members_"]
+                _members_ = cast(dict[str, Any], data["_members_"])  # pyright: ignore[reportExplicitAny]
 
-            data["_reverse_map_"] = {v: k for k, v in _members_.items()}
-            cls = type(_type).__new__(metacls, name, bases, data)
-            for key, value in cls._members_.items():
+            data["_reverse_map_"] = {v: k for k, v in _members_.items()}  # pyright: ignore[reportAny]
+            cls = type(_type).__new__(cls, name, bases, data)  # pyright: ignore[reportCallIssue, reportUnknownVariableType]
+            for key, value in cast(dict[str, Any], cls._members_).items():  # pyright: ignore[reportExplicitAny, reportAny]
                 globals()[key] = value
 
-            return cls
+            return cls  # pyright: ignore[reportUnknownVariableType]
 
+        @override
         def __repr__(self):
-            return f"<Enumeration {self.__name__}>"
+            return f"<Enumeration {self.__name__}>"  # pyright: ignore[reportUnknownMemberType]
 
     return EnumerationType
 
 
-def TypedCEnumeration(_type):
-    class CEnumeration(_type, metaclass=TypedEnumerationType(_type)):
-        _members_ = {}
+def TypedCEnumeration(_type: type["SimpleCData"]):
+    class CEnumeration(_type, metaclass=TypedEnumerationType(_type)):  # pyright: ignore[reportGeneralTypeIssues, reportUntypedBaseClass]
+        _members_: dict[str, Any] = {}  # pyright: ignore[reportExplicitAny]
 
+        @override
         def __repr__(self):
-            value = self.value
-            return f"<{self.__class__.__name__}.{self._reverse_map_.get(value, '(unknown)')}: {value}>"
+            value = self.value  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+            return f"<{self.__class__.__name__}.{self._reverse_map_.get(value, '(unknown)')}: {value}>"  # pyright: ignore[reportUnknownMemberType]
 
-        def __eq__(self, other):
+        @override
+        def __eq__(self, other: Any) -> bool:  # pyright: ignore[reportExplicitAny, reportAny]
             if isinstance(other, int):
-                return self.value == other
+                return self.value == other  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
-            return isinstance(self, type(other)) and self.value == other.value
+            return isinstance(self, type(other)) and self.value == other.value  # pyright: ignore[reportUnknownVariableType, reportAny, reportUnknownMemberType]
 
-        def __ne__(self, other):
+        @override
+        def __ne__(self, other: Any) -> bool:  # pyright: ignore[reportExplicitAny, reportAny]
             if isinstance(other, int):
-                return self.value != other
+                return self.value != other  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
-            return isinstance(self, type(other)) and self.value != other.value
+            return isinstance(self, type(other)) and self.value != other.value  # pyright: ignore[reportUnknownVariableType, reportAny, reportUnknownMemberType]
 
-        def __and__(self, other):
+        @override
+        def __and__(self, other: Any) -> int | bool:  # pyright: ignore[reportExplicitAny, reportAny, reportGeneralTypeIssues]
             if isinstance(other, int):
-                return self.value & other
+                return self.value & other  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
-            return isinstance(self, type(other)) and self.value & other.value
+            return isinstance(self, type(other)) and self.value & other.value  # pyright: ignore[reportUnknownVariableType, reportAny, reportUnknownMemberType]
 
-        def __gt__(self, other):
+        @override
+        def __gt__(self, other: Any) -> bool:  # pyright: ignore[reportGeneralTypeIssues, reportAny, reportExplicitAny]
             if isinstance(other, int):
-                return self.value > other
+                return self.value > other  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
-            return isinstance(self, type(other)) and self.value > other.value
+            return isinstance(self, type(other)) and self.value > other.value  # pyright: ignore[reportUnknownVariableType, reportAny, reportUnknownMemberType]
 
-        def __lt__(self, other):
+        @override
+        def __lt__(self, other: Any) -> bool:  # pyright: ignore[reportGeneralTypeIssues, reportExplicitAny, reportAny]
             if isinstance(other, int):
-                return self.value < other
+                return self.value < other  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
-            return isinstance(self, type(other)) and self.value < other.value
+            return isinstance(self, type(other)) and self.value < other.value  # pyright: ignore[reportUnknownVariableType, reportAny, reportUnknownMemberType]
 
-        def __ge__(self, other):
+        @override
+        def __ge__(self, other: Any) -> bool:  # pyright: ignore[reportGeneralTypeIssues, reportExplicitAny, reportAny]
             if isinstance(other, int):
-                return self.value > other
+                return self.value > other  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
 
-            return isinstance(self, type(other)) and self.value > other.value
+            return isinstance(self, type(other)) and self.value > other.value  # pyright: ignore[reportUnknownVariableType, reportAny, reportUnknownMemberType]
 
-        def __le__(self, other):
+        @override
+        def __le__(self, other: Any) -> bool:  # pyright: ignore[reportGeneralTypeIssues, reportAny, reportExplicitAny]
             if isinstance(other, int):
-                return self.value <= other
+                return self.value <= other  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
-            return isinstance(self, type(other)) and self.value <= other.value
+            return isinstance(self, type(other)) and self.value <= other.value  # pyright: ignore[reportUnknownVariableType, reportAny, reportUnknownMemberType]
 
         # TODO Add the rest
         #  See https://docs.python.org/3/reference/datamodel.html#emulating-numeric-types
@@ -86,6 +106,7 @@ def TypedCEnumeration(_type):
     return CEnumeration
 
 
+@final
 class EXT4_INO(TypedCEnumeration(c_uint32)):
     BAD = 1  # Bad blocks inode
     ROOT = 2  # Root inode
@@ -98,6 +119,7 @@ class EXT4_INO(TypedCEnumeration(c_uint32)):
     GOOD_OLD_FIRST = 11
 
 
+@final
 class EXT4_FS(TypedCEnumeration(c_uint16)):
     VALID = 0x0001  # Unmounted cleanly
     ERROR = 0x0002  # Errors detected
@@ -105,12 +127,14 @@ class EXT4_FS(TypedCEnumeration(c_uint16)):
     FC_REPLAY = 0x0020  # Fast commit replay ongoing
 
 
+@final
 class EXT4_ERRORS(TypedCEnumeration(c_uint16)):
     DEFAULT = CONTINUE = 1  # Continue execution
     RO = 2  # Remount fs read-only
     PANIC = 3  # Panic
 
 
+@final
 class EXT4_OS(TypedCEnumeration(c_uint32)):
     LINUX = 0
     HURD = 1
@@ -119,12 +143,14 @@ class EXT4_OS(TypedCEnumeration(c_uint32)):
     LITES = 4
 
 
+@final
 class EXT4_REV(TypedCEnumeration(c_uint32)):
     EXT4_GOOD_OLD_REV = 0  # The good old (original) format
     EXT4_DYNAMIC_REV = 1  # V2 format w/ dynamic inode sizes
     EXT4_MAX_SUPP_REV = EXT4_DYNAMIC_REV
 
 
+@final
 class EXT4_FEATURE_COMPAT(TypedCEnumeration(c_uint32)):
     DIR_PREALLOC = 0x0001
     IMAGIC_INODES = 0x0002
@@ -138,6 +164,7 @@ class EXT4_FEATURE_COMPAT(TypedCEnumeration(c_uint32)):
     ORPHAN_FILE = 0x1000  # Orphan file exists
 
 
+@final
 class EXT4_FEATURE_INCOMPAT(TypedCEnumeration(c_uint32)):
     COMPRESSION = 0x0001
     FILETYPE = 0x0002
@@ -157,6 +184,7 @@ class EXT4_FEATURE_INCOMPAT(TypedCEnumeration(c_uint32)):
     CASEFOLD = 0x20000
 
 
+@final
 class EXT4_FEATURE_RO_COMPAT(TypedCEnumeration(c_uint32)):
     SPARSE_SUPER = 0x0001
     LARGE_FILE = 0x0002
@@ -174,6 +202,7 @@ class EXT4_FEATURE_RO_COMPAT(TypedCEnumeration(c_uint32)):
     ORPHAN_PRESENT = 0x10000  # Orphan file may be non-empty
 
 
+@final
 class DX_HASH(TypedCEnumeration(c_uint8)):
     LEGACY = 0
     HALF_MD4 = 1
@@ -184,6 +213,7 @@ class DX_HASH(TypedCEnumeration(c_uint8)):
     SIPHASH = 6
 
 
+@final
 class EXT4_DEFM(TypedCEnumeration(c_uint32)):
     DEBUG = 0x0001
     BSDGROUPS = 0x0002
@@ -200,16 +230,19 @@ class EXT4_DEFM(TypedCEnumeration(c_uint32)):
     NODELALLOC = 0x0800
 
 
+@final
 class EXT2_FLAGS(TypedCEnumeration(c_uint32)):
     SIGNED_HASH = 0x0001  # Signed dirhash in use
     UNSIGNED_HASH = 0x0002  # Unsigned dirhash in use
     TEST_FILESYS = 0x0004  # to test development code
 
 
+@final
 class EXT4_CHKSUM(TypedCEnumeration(c_uint8)):
     CRC32C = 1
 
 
+@final
 class EXT4_MOUNT(TypedCEnumeration(c_uint8)):
     NO_MBCACHE = 0x00001  # Do not use mbcache
     GRPID = 0x00004  # Create files with directory's group
@@ -247,6 +280,7 @@ class EXT4_MOUNT(TypedCEnumeration(c_uint8)):
     INIT_INODE_TABLE = 0x80000000  # Initialize uninitialized itables
 
 
+@final
 class EXT4_MOUNT2(TypedCEnumeration(c_uint8)):
     EXPLICIT_DELALLOC = 0x00000001  # User explicitly specified delalloc
     STD_GROUP_SIZE = 0x00000002  # We have standard group size of blocksize * 8 blocks
@@ -259,6 +293,7 @@ class EXT4_MOUNT2(TypedCEnumeration(c_uint8)):
     ABORT = 0x00000100  # Abort filesystem
 
 
+@final
 class FS_ENCRYPTION_MODE(TypedCEnumeration(c_uint8)):
     INVALID = 0  # never used
     AES_256_XTS = 1
@@ -270,12 +305,14 @@ class FS_ENCRYPTION_MODE(TypedCEnumeration(c_uint8)):
     ADIANTUM = 9
 
 
+@final
 class EXT4_BG(TypedCEnumeration(c_uint16)):
     INODE_UNINIT = 0x0001  # Inode table/bitmap not in use
     BLOCK_UNINIT = 0x0002  # Block bitmap not in use
     INODE_ZEROED = 0x0004  # On-disk itable initialized to zero
 
 
+@final
 class MODE(TypedCEnumeration(c_uint16)):
     IXOTH = 0x1  # (Others may execute)
     IWOTH = 0x2  # (Others may write)
@@ -299,6 +336,7 @@ class MODE(TypedCEnumeration(c_uint16)):
     IFSOCK = 0xC000  # (Socket)
 
 
+@final
 class EXT4_FL(TypedCEnumeration(c_uint32)):
     SECRM = 0x00000001  # Secure deletion
     UNRM = 0x00000002  # Undelete
@@ -329,6 +367,7 @@ class EXT4_FL(TypedCEnumeration(c_uint32)):
     RESERVED = 0x80000000  # reserved for ext4 lib
 
 
+@final
 class EXT4_FT(TypedCEnumeration(c_uint8)):
     UNKNOWN = 0
     REG_FILE = 1

@@ -23,33 +23,35 @@ class InvalidStreamException(Exception):
 
 
 class Inodes(object):
-    def __init__(self, volume):
-        self.volume = volume
+    def __init__(self, volume: "Volume"):
+        self.volume: Volume = volume
 
     @property
-    def superblock(self):
+    def superblock(self) -> Superblock:
         return self.volume.superblock
 
     @property
-    def block_size(self):
+    def block_size(self) -> int:
         return self.volume.block_size
 
     @cached(cache={})
     def group(self, index: int) -> tuple[int, int]:
+        assert isinstance(self.superblock.s_inodes_per_group, int)  # pyright: ignore[reportAny]
         group_index = (index - 1) // self.superblock.s_inodes_per_group
         table_entry_index = (index - 1) % self.superblock.s_inodes_per_group
         return group_index, table_entry_index
 
-    @cached(cache=LRUCache(maxsize=32))
+    @cached(cache=LRUCache(maxsize=32))  # pyright: ignore[reportUnknownArgumentType]
     def offset(self, index: int) -> int:
         group_index, table_entry_index = self.group(index)
         table_offset = (
             self.volume.group_descriptors[group_index].bg_inode_table * self.block_size
         )
+        assert isinstance(self.superblock.s_inode_size, int)  # pyright: ignore[reportAny]
         return table_offset + table_entry_index * self.superblock.s_inode_size
 
-    @cached(cache=LRUCache(maxsize=32))
-    def __getitem__(self, index):
+    @cached(cache=LRUCache(maxsize=32))  # pyright: ignore[reportUnknownArgumentType]
+    def __getitem__(self, index: int):
         offset = self.offset(index)
         return Inode(self.volume, offset, index)
 
@@ -87,6 +89,8 @@ class Volume(object):
         self.group_descriptors: list[BlockDescriptor] = []
         block_size = self.block_size
         table_offset = (self.superblock.offset // block_size + 1) * block_size
+        assert isinstance(self.superblock.s_inodes_count, int)  # pyright: ignore[reportAny]
+        assert isinstance(self.superblock.s_inodes_per_group, int)  # pyright: ignore[reportAny]
         for index in range(
             0, self.superblock.s_inodes_count // self.superblock.s_inodes_per_group
         ):
@@ -138,7 +142,8 @@ class Volume(object):
 
     @property
     def uuid(self):
-        return UUID(bytes=bytes(self.superblock.s_uuid))
+        assert isinstance(self.superblock.s_uuid, bytes)  # pyright: ignore[reportAny]
+        return UUID(bytes=self.superblock.s_uuid)
 
     @property
     def seed(self):
@@ -146,7 +151,13 @@ class Volume(object):
 
     @property
     def block_size(self) -> int:
-        return 2 ** (10 + self.superblock.s_log_block_size)
+        assert isinstance(self.superblock.s_log_block_size, int)  # pyright: ignore[reportAny]
+        return int(
+            2
+            ** (  # pyright: ignore[reportAny]
+                10 + self.superblock.s_log_block_size
+            )
+        )
 
     def seek(self, offset: int, mode: int = io.SEEK_SET) -> int:
         if mode == io.SEEK_SET:
@@ -192,7 +203,7 @@ class Volume(object):
 
         return tuple(x.encode("utf-8") for x in PurePosixPath(path).parts[1:])
 
-    @cached(cache=LRUCache(maxsize=32))
+    @cached(cache=LRUCache(maxsize=32))  # pyright: ignore[reportUnknownArgumentType]
     def inode_at(self, path: str | bytes) -> Inode:
         paths = list(self.path_tuple(path))
         cwd = self.root
