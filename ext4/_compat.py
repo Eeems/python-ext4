@@ -30,19 +30,11 @@ class PeekableStream(ReadableStream, Protocol):
 
 
 T = TypeVar("T")
-# Added in python 3.11
-try:
-    from typing import assert_type as _assert_type
-
-except ImportError:
-
-    def _assert_type(obj: T, T: Any, /) -> T:  # pyright: ignore[reportExplicitAny, reportAny]
-        assert isinstance(obj, T), f"Object is: {type(obj)} not {T}"
-        return obj
 
 
-def assert_type(obj: T, T: Any, /) -> T:  # pyright: ignore[reportExplicitAny, reportAny]
-    return _assert_type(obj, T)
+def assert_cast(obj: T, T: Any, /) -> T:  # pyright: ignore[reportExplicitAny, reportAny]
+    assert isinstance(obj, T), f"Object is: {type(obj)} not {T}"
+    return obj
 
 
-__all__ = ["override", "ReadableStream", "PeekableStream", "assert_type"]
+__all__ = ["override", "ReadableStream", "PeekableStream", "assert_cast"]

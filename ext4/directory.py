@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 from .struct import Ext4Struct
 from .enum import EXT4_FT
 from ._compat import override
-from ._compat import assert_type
+from ._compat import assert_cast
 
 if TYPE_CHECKING:
     from .inode import Directory
@@ -49,7 +49,7 @@ class DirectoryEntryBase(DirectoryEntryStruct):
 
     @property
     def is_fake_entry(self) -> bool:
-        name_len = assert_type(self.name_len, int)  # pyright: ignore[reportAny]
+        name_len = assert_cast(self.name_len, int)  # pyright: ignore[reportAny]
         return 0 < name_len <= 2 and self.name_bytes in (b".", b"..")
 
 
@@ -79,7 +79,7 @@ class DirectoryEntry2(DirectoryEntryBase):
 
     @DirectoryEntryBase.is_fake_entry.getter
     def is_fake_entry(self) -> bool:
-        file_type = assert_type(self.file_type, EXT4_FT)  # pyright: ignore[reportAny]
+        file_type = assert_cast(self.file_type, EXT4_FT)  # pyright: ignore[reportAny]
         return super().is_fake_entry or file_type == EXT4_FT.DIR_CSUM
 
 
@@ -97,7 +97,7 @@ class DirectoryEntryTail(DirectoryEntryStruct):
 
     @Ext4Struct.magic.getter
     def magic(self) -> int:
-        det_reserved_ft: int = assert_type(self.det_reserved_ft, int)  # pyright: ignore[reportAny]
+        det_reserved_ft: int = assert_cast(self.det_reserved_ft, int)  # pyright: ignore[reportAny]
         return det_reserved_ft
 
     @Ext4Struct.expected_magic.getter

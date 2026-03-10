@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 
 from ._compat import override
 from ._compat import ReadableStream
-from ._compat import assert_type
+from ._compat import assert_cast
 
 from collections.abc import Generator
 
@@ -236,24 +236,24 @@ class Inode(Ext4Struct):
 
     @property
     def i_size(self) -> int:
-        i_size_lo: int = assert_type(self.i_size_lo, int)  # pyright: ignore[reportAny]
-        i_size_high: int = assert_type(self.i_size_high, int)  # pyright: ignore[reportAny]
+        i_size_lo: int = assert_cast(self.i_size_lo, int)  # pyright: ignore[reportAny]
+        i_size_high: int = assert_cast(self.i_size_high, int)  # pyright: ignore[reportAny]
         return i_size_high << 32 | i_size_lo
 
     @property
     def i_file_acl(self) -> int:
-        i_file_acl_lo: int = assert_type(self.i_file_acl_lo, int)  # pyright: ignore[reportAny]
-        l_i_file_acl_high: int = assert_type(self.osd2.linux2.l_i_file_acl_high, int)  # pyright: ignore[reportAny]
+        i_file_acl_lo: int = assert_cast(self.i_file_acl_lo, int)  # pyright: ignore[reportAny]
+        l_i_file_acl_high: int = assert_cast(self.osd2.linux2.l_i_file_acl_high, int)  # pyright: ignore[reportAny]
         return l_i_file_acl_high << 32 | i_file_acl_lo
 
     @property
     def has_hi(self) -> bool:
-        s_inode_size: int = assert_type(self.superblock.s_inode_size, int)  # pyright: ignore[reportAny]
+        s_inode_size: int = assert_cast(self.superblock.s_inode_size, int)  # pyright: ignore[reportAny]
         return s_inode_size > self.EXT2_GOOD_OLD_INODE_SIZE
 
     @property
     def fits_in_hi(self) -> bool:
-        i_extra_isize: int = assert_type(self.i_extra_isize, int)  # pyright: ignore[reportAny]
+        i_extra_isize: int = assert_cast(self.i_extra_isize, int)  # pyright: ignore[reportAny]
         return (
             self.has_hi
             and Inode.i_checksum_hi.offset + Inode.i_checksum_hi.size
@@ -270,7 +270,7 @@ class Inode(Ext4Struct):
 
     @Ext4Struct.checksum.getter
     def checksum(self) -> int | None:
-        s_creator_os: EXT4_OS = assert_type(self.superblock.s_creator_os, EXT4_OS)  # pyright: ignore[reportAny]
+        s_creator_os: EXT4_OS = assert_cast(self.superblock.s_creator_os, EXT4_OS)  # pyright: ignore[reportAny]
         if s_creator_os != EXT4_OS.LINUX:
             return None
 
@@ -296,7 +296,7 @@ class Inode(Ext4Struct):
                 data[offset:],
                 csum,
             )
-            s_inode_size: int = assert_type(self.superblock.s_inode_size, int)  # pyright: ignore[reportAny]
+            s_inode_size: int = assert_cast(self.superblock.s_inode_size, int)  # pyright: ignore[reportAny]
             if s_inode_size - len(data) > 0:
                 csum = crc32c(self.extra_inode_data, csum)
 
@@ -307,15 +307,15 @@ class Inode(Ext4Struct):
 
     @Ext4Struct.expected_checksum.getter
     def expected_checksum(self) -> int | None:
-        s_creator_os: EXT4_OS = assert_type(self.superblock.s_creator_os, EXT4_OS)  # pyright: ignore[reportAny]
+        s_creator_os: EXT4_OS = assert_cast(self.superblock.s_creator_os, EXT4_OS)  # pyright: ignore[reportAny]
         if s_creator_os != EXT4_OS.LINUX:
             return None
 
         provided_csum: int = 0
-        l_i_checksum_lo: int = assert_type(self.osd2.linux2.l_i_checksum_lo, int)  # pyright: ignore[reportAny]
+        l_i_checksum_lo: int = assert_cast(self.osd2.linux2.l_i_checksum_lo, int)  # pyright: ignore[reportAny]
         provided_csum |= l_i_checksum_lo
         if self.has_hi:
-            i_checksum_hi: int = assert_type(self.i_checksum_hi, int)  # pyright: ignore[reportAny]
+            i_checksum_hi: int = assert_cast(self.i_checksum_hi, int)  # pyright: ignore[reportAny]
             provided_csum |= i_checksum_hi << 16
 
         return provided_csum
@@ -328,7 +328,7 @@ class Inode(Ext4Struct):
 
     @property
     def is_inline(self) -> bool:
-        i_flags: EXT4_OS = assert_type(self.i_flags, EXT4_FL)  # pyright: ignore[reportAny]
+        i_flags: EXT4_OS = assert_cast(self.i_flags, EXT4_FL)  # pyright: ignore[reportAny]
         return (i_flags & EXT4_FL.EXTENTS) == 0
 
     @property
@@ -371,9 +371,9 @@ class Inode(Ext4Struct):
     def xattrs(
         self,
     ) -> Generator[tuple[str, bytes], None, None]:
-        i_extra_isize: int = assert_type(self.i_extra_isize, int)  # pyright: ignore[reportAny]
+        i_extra_isize: int = assert_cast(self.i_extra_isize, int)  # pyright: ignore[reportAny]
         inline_offset: int = self.offset + self.EXT2_GOOD_OLD_INODE_SIZE + i_extra_isize
-        s_inode_size: int = assert_type(self.superblock.s_inode_size, int)  # pyright: ignore[reportAny]
+        s_inode_size: int = assert_cast(self.superblock.s_inode_size, int)  # pyright: ignore[reportAny]
         inline_size: int = self.offset + s_inode_size - inline_offset
         if inline_size > sizeof(ExtendedAttributeIBodyHeader):
             try:
@@ -450,17 +450,17 @@ class Directory(Inode):
 
     @property
     def is_htree(self) -> bool:
-        i_flags: EXT4_FL = assert_type(self.i_flags, EXT4_FL)  # pyright: ignore[reportAny]
+        i_flags: EXT4_FL = assert_cast(self.i_flags, EXT4_FL)  # pyright: ignore[reportAny]
         return i_flags & EXT4_FL.INDEX != 0
 
     @property
     def is_casefolded(self) -> bool:
-        i_flags: EXT4_FL = assert_type(self.i_flags, EXT4_FL)  # pyright: ignore[reportAny]
+        i_flags: EXT4_FL = assert_cast(self.i_flags, EXT4_FL)  # pyright: ignore[reportAny]
         return i_flags & EXT4_FL.CASEFOLD != 0
 
     @property
     def is_encrypted(self) -> bool:
-        i_flags: EXT4_FL = assert_type(self.i_flags, EXT4_FL)  # pyright: ignore[reportAny]
+        i_flags: EXT4_FL = assert_cast(self.i_flags, EXT4_FL)  # pyright: ignore[reportAny]
         return i_flags & EXT4_FL.ENCRYPT != 0
 
     @property
@@ -480,13 +480,13 @@ class Directory(Inode):
         data = self._open().read()
         while offset < len(data):
             dirent = _type(self, offset)
-            rec_len: int = assert_type(dirent.rec_len, int)  # pyright: ignore[reportAny]
+            rec_len: int = assert_cast(dirent.rec_len, int)  # pyright: ignore[reportAny]
             if not rec_len:
                 # How did this happen?
                 offset += _type.name.offset  # + EXT4_DIR_ROUND
                 continue
 
-            name_len: int = assert_type(dirent.name_len, int)  # pyright: ignore[reportAny]
+            name_len: int = assert_cast(dirent.name_len, int)  # pyright: ignore[reportAny]
             if not dirent.inode or not name_len:
                 offset += rec_len
                 continue
@@ -507,7 +507,7 @@ class Directory(Inode):
                 break
 
             offset += rec_len
-            file_type: EXT4_FT = assert_type(dirent.file_type, EXT4_FT)  # pyright: ignore[reportAny]
+            file_type: EXT4_FT = assert_cast(dirent.file_type, EXT4_FT)  # pyright: ignore[reportAny]
             if not self.has_filetype or file_type != EXT4_FT.UNKNOWN:
                 dirents.append(dirent)
                 yield dirent
@@ -551,7 +551,7 @@ class Directory(Inode):
     def opendir(self):
         for dirent in self._opendir():
             if isinstance(dirent, DirectoryEntry2):
-                file_type: EXT4_FT = assert_type(dirent.file_type, EXT4_FT)  # pyright: ignore[reportAny]
+                file_type: EXT4_FT = assert_cast(dirent.file_type, EXT4_FT)  # pyright: ignore[reportAny]
                 if file_type == EXT4_FT.DIR_CSUM:
                     continue
 
