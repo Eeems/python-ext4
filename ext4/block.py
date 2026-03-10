@@ -112,16 +112,13 @@ class BlockIO(io.RawIOBase):
         start_index = self.cursor // self.block_size
         end_index = (self.cursor + size - 1) // self.block_size
         start_offset = self.cursor % self.block_size
-        data = b""
+        blocks_list = []
+
         for i in range(start_index, end_index + 1):
             block = self.blocks[i]
-            if block is None:
-                block = bytearray(self.block_size)
-
+            mv = memoryview(block)
             if i == start_index:
-                block = block[start_offset:]
+                mv = mv[start_offset:]
+            blocks_list.append(mv)
 
-            data += block
-
-        data = data[:size]
-        return data
+        return b"".join(blocks_list)[:size]
