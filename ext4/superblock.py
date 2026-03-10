@@ -175,7 +175,7 @@ class Superblock(Ext4Struct):
         return s_free_blocks_count_lo
 
     @property
-    def metadata_csum(self) -> int:
+    def metadata_csum(self) -> bool:
         return self.feature_ro_compat & EXT4_FEATURE_RO_COMPAT.METADATA_CSUM != 0
 
     @Ext4Struct.expected_magic.getter
@@ -217,7 +217,7 @@ class Superblock(Ext4Struct):
         return s_feature_compat
 
     @property
-    def feature_ro_compat(self) -> EXT4_FEATURE_COMPAT:
+    def feature_ro_compat(self) -> EXT4_FEATURE_RO_COMPAT:
         s_feature_ro_compat: EXT4_FEATURE_RO_COMPAT = assert_cast(  # pyright: ignore[reportAny]
             self.s_feature_ro_compat,  # pyright: ignore[reportAny]
             EXT4_FEATURE_RO_COMPAT,
