@@ -92,7 +92,7 @@ def TypedCEnumeration(_type: type["SimpleCData"]):
             if isinstance(other, int):
                 return self.value >= other  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
 
-            return isinstance(self, type(other)) and self.value > other.value  # pyright: ignore[reportUnknownVariableType, reportAny, reportUnknownMemberType]
+            return isinstance(self, type(other)) and self.value >= other.value  # pyright: ignore[reportUnknownVariableType, reportAny, reportUnknownMemberType]
 
         @override
         def __le__(self, other: Any) -> bool:  # pyright: ignore[reportGeneralTypeIssues, reportAny, reportExplicitAny]
