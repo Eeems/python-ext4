@@ -53,7 +53,11 @@ class DotDirectoryEntry2(LittleEndianStructureWithVolume):
         if not self.volume.ignore_magic:
             raise MagicError(message)
 
-        warnings.warn(message, RuntimeWarning)
+        warnings.warn(
+            message,
+            RuntimeWarning,
+            stacklevel=2,
+        )
 
 
 @final

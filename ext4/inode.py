@@ -508,6 +508,7 @@ class Directory(Inode):
                     + f", expected={expected_rec_len}"
                     + f", actual={rec_len}",
                     RuntimeWarning,
+                    stacklevel=2,
                 )
                 break
 
