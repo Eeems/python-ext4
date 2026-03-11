@@ -32,8 +32,8 @@ class PeekableStream(ReadableStream, Protocol):
 T = TypeVar("T")
 
 
-def assert_cast(obj: T, T: Any, /) -> T:  # pyright: ignore[reportExplicitAny, reportAny]
-    assert isinstance(obj, T), f"Object is: {type(obj)} not {T}"
+def assert_cast(obj: Any, t: type[T], /) -> T:  # pyright: ignore[reportExplicitAny, reportAny]
+    assert isinstance(obj, t), f"Object is: {type(obj)} not {t}"  # pyright: ignore[reportAny]
     return obj
 
 

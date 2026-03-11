@@ -9,6 +9,7 @@ from pathlib import PurePosixPath
 
 from cachetools import cached
 from cachetools import LRUCache
+from cachetools.keys import hashkey
 
 from ._compat import PeekableStream
 from ._compat import assert_cast
@@ -35,14 +36,17 @@ class Inodes(object):
     def block_size(self) -> int:
         return self.volume.block_size
 
-    @cached(cache={})
+    @cached(cache={}, key=lambda self, index: hashkey(id(self), index))  # pyright: ignore[reportUnknownArgumentType, reportUnknownLambdaType]
     def group(self, index: int) -> tuple[int, int]:
         s_inodes_per_group: int = assert_cast(self.superblock.s_inodes_per_group, int)  # pyright: ignore[reportAny]
         group_index = (index - 1) // s_inodes_per_group
         table_entry_index = (index - 1) % s_inodes_per_group
         return group_index, table_entry_index
 
-    @cached(cache=LRUCache(maxsize=32))  # pyright: ignore[reportUnknownArgumentType]
+    @cached(
+        cache=LRUCache(maxsize=32),
+        key=lambda self, index: hashkey(id(self), index),  # pyright: ignore[reportUnknownArgumentType, reportUnknownLambdaType]
+    )
     def offset(self, index: int) -> int:
         group_index, table_entry_index = self.group(index)
         table_offset = (
@@ -51,7 +55,10 @@ class Inodes(object):
         s_inode_size: int = assert_cast(self.superblock.s_inode_size, int)  # pyright: ignore[reportAny]
         return table_offset + table_entry_index * s_inode_size
 
-    @cached(cache=LRUCache(maxsize=32))  # pyright: ignore[reportUnknownArgumentType]
+    @cached(
+        cache=LRUCache(maxsize=32),
+        key=lambda self, index: hashkey(id(self), index),  # pyright: ignore[reportUnknownArgumentType, reportUnknownLambdaType]
+    )
     def __getitem__(self, index: int):
         offset = self.offset(index)
         return Inode(self.volume, offset, index)
@@ -204,7 +211,10 @@ class Volume(object):
 
         return tuple(x.encode("utf-8") for x in PurePosixPath(path).parts[1:])
 
-    @cached(cache=LRUCache(maxsize=32))  # pyright: ignore[reportUnknownArgumentType]
+    @cached(
+        cache=LRUCache(maxsize=32),
+        key=lambda self, index: hashkey(id(self), index),  # pyright: ignore[reportUnknownArgumentType, reportUnknownLambdaType]
+    )
     def inode_at(self, path: str | bytes) -> Inode:
         paths = list(self.path_tuple(path))
         cwd = self.root
