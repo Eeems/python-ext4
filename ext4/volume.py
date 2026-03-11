@@ -108,7 +108,7 @@ class Volume(object):
             self.group_descriptors.insert(index, descriptor)
 
         self.inodes: Inodes = Inodes(self)
-        self._inode_at_cache: LRUCache[int, Inode] = LRUCache(maxsize=32)
+        self._inode_at_cache: LRUCache[str | bytes, Inode] = LRUCache(maxsize=32)
 
     def __len__(self):
         _ = self.stream.seek(0, io.SEEK_END)
