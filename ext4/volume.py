@@ -7,9 +7,8 @@ import errno
 from uuid import UUID
 from pathlib import PurePosixPath
 
-from cachetools import cached
+from cachetools import cachedmethod
 from cachetools import LRUCache
-from cachetools.keys import hashkey
 
 from ._compat import PeekableStream
 from ._compat import assert_cast
@@ -27,6 +26,9 @@ class InvalidStreamException(Exception):
 class Inodes(object):
     def __init__(self, volume: "Volume"):
         self.volume: Volume = volume
+        self._group_cache: dict[int, tuple[int, int]] = {}
+        self._offset_cache: LRUCache[int, int] = LRUCache(maxsize=32)
+        self._getitem_cache: LRUCache[int, Inode] = LRUCache(maxsize=32)
 
     @property
     def superblock(self) -> Superblock:
@@ -36,29 +38,23 @@ class Inodes(object):
     def block_size(self) -> int:
         return self.volume.block_size
 
-    @cached(cache={}, key=lambda self, index: hashkey(id(self), index))  # pyright: ignore[reportUnknownArgumentType, reportUnknownLambdaType]
+    @cachedmethod(lambda self: self._group_cache)  # pyright: ignore[reportAny]
     def group(self, index: int) -> tuple[int, int]:
-        s_inodes_per_group: int = assert_cast(self.superblock.s_inodes_per_group, int)  # pyright: ignore[reportAny]
+        s_inodes_per_group = assert_cast(self.superblock.s_inodes_per_group, int)  # pyright: ignore[reportAny]
         group_index = (index - 1) // s_inodes_per_group
         table_entry_index = (index - 1) % s_inodes_per_group
         return group_index, table_entry_index
 
-    @cached(
-        cache=LRUCache(maxsize=32),
-        key=lambda self, index: hashkey(id(self), index),  # pyright: ignore[reportUnknownArgumentType, reportUnknownLambdaType]
-    )
+    @cachedmethod(lambda self: self._offset_cache)  # pyright: ignore[reportAny]
     def offset(self, index: int) -> int:
         group_index, table_entry_index = self.group(index)
         table_offset = (
             self.volume.group_descriptors[group_index].bg_inode_table * self.block_size
         )
-        s_inode_size: int = assert_cast(self.superblock.s_inode_size, int)  # pyright: ignore[reportAny]
+        s_inode_size = assert_cast(self.superblock.s_inode_size, int)  # pyright: ignore[reportAny]
         return table_offset + table_entry_index * s_inode_size
 
-    @cached(
-        cache=LRUCache(maxsize=32),
-        key=lambda self, index: hashkey(id(self), index),  # pyright: ignore[reportUnknownArgumentType, reportUnknownLambdaType]
-    )
+    @cachedmethod(lambda self: self._getitem_cache)  # pyright: ignore[reportAny]
     def __getitem__(self, index: int):
         offset = self.offset(index)
         return Inode(self.volume, offset, index)
@@ -97,8 +93,8 @@ class Volume(object):
         self.group_descriptors: list[BlockDescriptor] = []
         block_size = self.block_size
         table_offset = (self.superblock.offset // block_size + 1) * block_size
-        s_inodes_count: int = assert_cast(self.superblock.s_inodes_count, int)  # pyright: ignore[reportAny]
-        s_inodes_per_group: int = assert_cast(self.superblock.s_inodes_per_group, int)  # pyright: ignore[reportAny]
+        s_inodes_count = assert_cast(self.superblock.s_inodes_count, int)  # pyright: ignore[reportAny]
+        s_inodes_per_group = assert_cast(self.superblock.s_inodes_per_group, int)  # pyright: ignore[reportAny]
         for index in range(0, s_inodes_count // s_inodes_per_group):
             descriptor = BlockDescriptor(
                 self,
@@ -109,6 +105,7 @@ class Volume(object):
             self.group_descriptors.insert(index, descriptor)
 
         self.inodes: Inodes = Inodes(self)
+        self._inode_at_cache: LRUCache[int, Inode] = LRUCache(maxsize=32)
 
     def __len__(self):
         _ = self.stream.seek(0, io.SEEK_END)
@@ -148,7 +145,7 @@ class Volume(object):
 
     @property
     def uuid(self):
-        s_uuid: bytes = assert_cast(bytes(self.superblock.s_uuid), bytes)  # pyright: ignore[reportAny]
+        s_uuid = assert_cast(bytes(self.superblock.s_uuid), bytes)  # pyright: ignore[reportAny]
         return UUID(bytes=s_uuid)
 
     @property
@@ -157,7 +154,7 @@ class Volume(object):
 
     @property
     def block_size(self) -> int:
-        s_log_block_size: int = assert_cast(self.superblock.s_log_block_size, int)  # pyright: ignore[reportAny]
+        s_log_block_size = assert_cast(self.superblock.s_log_block_size, int)  # pyright: ignore[reportAny]
         return int(
             2
             ** (  # pyright: ignore[reportAny]
@@ -211,10 +208,7 @@ class Volume(object):
 
         return tuple(x.encode("utf-8") for x in PurePosixPath(path).parts[1:])
 
-    @cached(
-        cache=LRUCache(maxsize=32),
-        key=lambda self, index: hashkey(id(self), index),  # pyright: ignore[reportUnknownArgumentType, reportUnknownLambdaType]
-    )
+    @cachedmethod(lambda self: self._inode_at_cache)  # pyright: ignore[reportAny]
     def inode_at(self, path: str | bytes) -> Inode:
         paths = list(self.path_tuple(path))
         cwd = self.root
@@ -229,7 +223,8 @@ class Volume(object):
             inode = None
             for dirent, _ in cwd.opendir():
                 if dirent.name_bytes == name:
-                    inode = self.inodes[dirent.inode]
+                    dirent_inode = assert_cast(dirent.inode, int)  # pyright: ignore[reportAny]
+                    inode = self.inodes[dirent_inode]
                     break
 
             if inode is None:

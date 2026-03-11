@@ -16,7 +16,6 @@ from ._compat import assert_cast
 
 if TYPE_CHECKING:
     from .inode import Directory
-    from .inode import Inode
 
 EXT4_NAME_LEN = 255
 EXT4_DIR_PAD = 4
@@ -27,9 +26,6 @@ EXT4_MAX_REC_LEN = (1 << 16) - 1
 class DirectoryEntryStruct(Ext4Struct):
     def __init__(self, directory: "Directory", offset: int):
         self.directory: "Directory" = directory
-        if not hasattr(self, "inode"):
-            self.inode: "Inode" = directory
-
         super().__init__(directory.volume, offset)
 
     @override
@@ -97,7 +93,7 @@ class DirectoryEntryTail(DirectoryEntryStruct):
 
     @Ext4Struct.magic.getter
     def magic(self) -> int:
-        det_reserved_ft: int = assert_cast(self.det_reserved_ft, int)  # pyright: ignore[reportAny]
+        det_reserved_ft = assert_cast(self.det_reserved_ft, int)  # pyright: ignore[reportAny]
         return det_reserved_ft
 
     @Ext4Struct.expected_magic.getter

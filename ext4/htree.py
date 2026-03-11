@@ -44,7 +44,7 @@ class DotDirectoryEntry2(LittleEndianStructureWithVolume):
     ]
 
     def verify(self) -> None:
-        name = assert_cast(self.name, str)  # pyright: ignore[reportAny]
+        name = assert_cast(self.name, bytes)  # pyright: ignore[reportAny]
         if name in (b".\0\0\0", b"..\0\0"):
             return
 
@@ -94,8 +94,8 @@ class DXEntry(DXBase):
     def __init__(self, parent: "DXEntriesBase", index: int):
         self.index: int = index
         self.parent: DXEntriesBase = parent
-        dx_root_info: DXRootInfo = assert_cast(parent.dx_root_info, DXRootInfo)  # pyright: ignore[reportAny]
-        info_length: int = assert_cast(dx_root_info.info_length, int)  # pyright: ignore[reportAny]
+        dx_root_info = assert_cast(parent.dx_root_info, DXRootInfo)  # pyright: ignore[reportAny]
+        info_length = assert_cast(dx_root_info.info_length, int)  # pyright: ignore[reportAny]
         super().__init__(
             parent.directory,
             parent.offset + parent.size + index * info_length,
@@ -109,7 +109,7 @@ class DXEntriesBase(DXBase):
 
     @property
     def entries(self) -> Generator[DXEntry, None, None]:
-        count: int = assert_cast(self.count, int)  # pyright: ignore[reportAny]
+        count = assert_cast(self.count, int)  # pyright: ignore[reportAny]
         for i in range(0, count - 1):
             yield DXEntry(self, i)
 
@@ -149,7 +149,7 @@ class DXFake(LittleEndianStructure):
 
     @property
     def magic(self) -> int:
-        inode: int = assert_cast(self.inode, int)  # pyright: ignore[reportAny]
+        inode = assert_cast(self.inode, int)  # pyright: ignore[reportAny]
         return inode
 
 
@@ -182,9 +182,9 @@ class DXTail(DXBase):
 
     def __init__(self, parent: DXNode):
         self.parent = parent
-        count: int = assert_cast(parent.count, int)  # pyright: ignore[reportAny]
-        dx_root_info: DXRootInfo = assert_cast(parent.dx_root_info, DXRootInfo)  # pyright: ignore[reportAny]
-        info_length: int = assert_cast(dx_root_info.info_length, int)  # pyright: ignore[reportAny]
+        count = assert_cast(parent.count, int)  # pyright: ignore[reportAny]
+        dx_root_info = assert_cast(parent.dx_root_info, DXRootInfo)  # pyright: ignore[reportAny]
+        info_length = assert_cast(dx_root_info.info_length, int)  # pyright: ignore[reportAny]
         super().__init__(
             parent.directory, parent.offset + parent.size + (count + 1) * info_length
         )
