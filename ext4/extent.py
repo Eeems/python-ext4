@@ -62,7 +62,7 @@ class ExtentBlocks(object):
         return self.volume.read(block_size)
 
     def __iter__(self):
-        return iter(range(self.ee_block, self.ee_len))
+        return iter(range(self.ee_block, self.ee_block + self.ee_len))
 
     def __len__(self):
         return self.ee_len
