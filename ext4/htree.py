@@ -94,11 +94,9 @@ class DXEntry(DXBase):
     def __init__(self, parent: "DXEntriesBase", index: int):
         self.index: int = index
         self.parent: DXEntriesBase = parent
-        dx_root_info = assert_cast(parent.dx_root_info, DXRootInfo)  # pyright: ignore[reportAny]
-        info_length = assert_cast(dx_root_info.info_length, int)  # pyright: ignore[reportAny]
         super().__init__(
             parent.directory,
-            parent.offset + parent.size + index * info_length,
+            parent.offset + parent.size + index * parent.info_length,
         )
 
 
@@ -112,6 +110,15 @@ class DXEntriesBase(DXBase):
         count = assert_cast(self.count, int)  # pyright: ignore[reportAny]
         for i in range(0, count - 1):
             yield DXEntry(self, i)
+
+    @property
+    def info_length(self) -> int:
+        parent = assert_cast(self.parent, DXEntriesBase)  # pyright: ignore[reportAny]
+        while not isinstance(parent, DXRoot):
+            parent = assert_cast(self.parent, DXEntriesBase)  # pyright: ignore[reportAny]
+
+        dx_root_info = assert_cast(parent.dx_root_info, DXRootInfo)  # pyright: ignore[reportAny]
+        return assert_cast(dx_root_info.info_length, int)  # pyright: ignore[reportAny]
 
 
 @final
@@ -183,8 +190,7 @@ class DXTail(DXBase):
     def __init__(self, parent: DXNode):
         self.parent = parent
         count = assert_cast(parent.count, int)  # pyright: ignore[reportAny]
-        dx_root_info = assert_cast(parent.dx_root_info, DXRootInfo)  # pyright: ignore[reportAny]
-        info_length = assert_cast(dx_root_info.info_length, int)  # pyright: ignore[reportAny]
         super().__init__(
-            parent.directory, parent.offset + parent.size + (count + 1) * info_length
+            parent.directory,
+            parent.offset + parent.size + (count + 1) * parent.info_length,
         )
