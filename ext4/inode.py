@@ -508,10 +508,8 @@ class Directory(Inode):
                 break
 
             offset += rec_len
-            file_type = assert_cast(dirent.file_type, EXT4_FT)  # pyright: ignore[reportAny]
-            if not self.has_filetype or file_type != EXT4_FT.UNKNOWN:
-                dirents.append(dirent)
-                yield dirent
+            dirents.append(dirent)
+            yield dirent
 
         self._dirents = dirents
 
