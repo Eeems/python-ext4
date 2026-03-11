@@ -171,11 +171,8 @@ class Volume(object):
         else:
             raise NotImplementedError(f"Seek mode {mode} not implemented")
 
-        if seek < 0:
+        if seek < 0 or seek > len(self):
             raise OSError(errno.EINVAL, os.strerror(errno.EINVAL))
-
-        if seek > len(self):
-            seek = len(self)
 
         self.cursor = seek
         return self.cursor
