@@ -1,3 +1,4 @@
+# pyright: reportImportCycles=false
 from ctypes import c_uint32
 from ctypes import c_uint16
 from ctypes import c_uint8
@@ -5,8 +6,16 @@ from ctypes import c_char
 from ctypes import memmove
 from ctypes import addressof
 
+from typing import final
+from typing import TYPE_CHECKING
+
 from .struct import Ext4Struct
 from .enum import EXT4_FT
+from ._compat import override
+from ._compat import assert_cast
+
+if TYPE_CHECKING:
+    from .inode import Directory
 
 EXT4_NAME_LEN = 255
 EXT4_DIR_PAD = 4
@@ -15,29 +24,32 @@ EXT4_MAX_REC_LEN = (1 << 16) - 1
 
 
 class DirectoryEntryStruct(Ext4Struct):
-    def __init__(self, directory, offset):
-        self.directory = directory
+    def __init__(self, directory: "Directory", offset: int):
+        self.directory: "Directory" = directory
         super().__init__(directory.volume, offset)
 
+    @override
     def read_from_volume(self):
-        data = self.directory._open().read()[self.offset : self.offset + self.size]
-        memmove(addressof(self), data, self.size)
+        data = self.directory._open().read()[self.offset : self.offset + self.size]  # pyright: ignore[reportPrivateUsage]
+        _ = memmove(addressof(self), data, self.size)
 
 
 class DirectoryEntryBase(DirectoryEntryStruct):
     @property
-    def name_bytes(self):
-        return bytes(self.name)[: self.name_len]
+    def name_bytes(self) -> bytes:
+        return bytes(self.name)[: self.name_len]  # pyright: ignore[reportAny]
 
     @property
-    def name_str(self):
+    def name_str(self) -> str:
         return self.name_bytes.decode("utf-8")
 
     @property
-    def is_fake_entry(self):
-        return 0 < self.name_len <= 2 and self.name_bytes in (b".", b"..")
+    def is_fake_entry(self) -> bool:
+        name_len = assert_cast(self.name_len, int)  # pyright: ignore[reportAny]
+        return 0 < name_len <= 2 and self.name_bytes in (b".", b"..")
 
 
+@final
 class DirectoryEntry(DirectoryEntryBase):
     _pack_ = 1
     # _anonymous_ = ("l_i_reserved",)
@@ -49,6 +61,7 @@ class DirectoryEntry(DirectoryEntryBase):
     ]
 
 
+@final
 class DirectoryEntry2(DirectoryEntryBase):
     _pack_ = 1
     # _anonymous_ = ("l_i_reserved",)
@@ -60,11 +73,13 @@ class DirectoryEntry2(DirectoryEntryBase):
         ("name", c_char * EXT4_NAME_LEN),
     ]
 
-    @property
-    def is_fake_entry(self):
-        return super().is_fake_entry or self.file_type == EXT4_FT.DIR_CSUM
+    @DirectoryEntryBase.is_fake_entry.getter
+    def is_fake_entry(self) -> bool:
+        file_type = assert_cast(self.file_type, EXT4_FT)  # pyright: ignore[reportAny]
+        return super().is_fake_entry or file_type == EXT4_FT.DIR_CSUM
 
 
+@final
 class DirectoryEntryTail(DirectoryEntryStruct):
     _pack_ = 1
     # _anonymous_ = ("det_reserved_zero1", "det_reserved_zero2",)
@@ -76,15 +91,17 @@ class DirectoryEntryTail(DirectoryEntryStruct):
         ("det_checksum", c_uint32),
     ]
 
-    @property
-    def magic(self):
-        return self.det_reserved_ft
+    @Ext4Struct.magic.getter
+    def magic(self) -> int:
+        det_reserved_ft = assert_cast(self.det_reserved_ft, int)  # pyright: ignore[reportAny]
+        return det_reserved_ft
 
-    @property
-    def expected_magic(self):
-        return EXT4_FT.DIR_CSUM
+    @Ext4Struct.expected_magic.getter
+    def expected_magic(self) -> int:
+        return int(EXT4_FT.DIR_CSUM)
 
 
+@final
 class DirectoryEntryHash(DirectoryEntryStruct):
     _pack_ = 1
     # _anonymous_ = ("det_reserved_zero1", "det_reserved_zero2",)

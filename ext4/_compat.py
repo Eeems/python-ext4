@@ -1,6 +1,8 @@
 import os
 from typing import Protocol
 from typing import runtime_checkable
+from typing import TypeVar
+from typing import Any
 
 # Added in python 3.12
 try:
@@ -8,7 +10,6 @@ try:
 
 except ImportError:
     from typing import Callable
-    from typing import Any
 
     def override(fn: Callable[..., Any]):  # pyright: ignore[reportExplicitAny]
         return fn
@@ -28,4 +29,12 @@ class PeekableStream(ReadableStream, Protocol):
     def peek(self, size: int = 0, /) -> bytes: ...
 
 
-__all__ = ["override", "ReadableStream"]
+T = TypeVar("T")
+
+
+def assert_cast(obj: Any, t: type[T], /) -> T:  # pyright: ignore[reportExplicitAny, reportAny]
+    assert isinstance(obj, t), f"Object is: {type(obj)} not {t}"  # pyright: ignore[reportAny]
+    return obj
+
+
+__all__ = ["override", "ReadableStream", "PeekableStream", "assert_cast"]
