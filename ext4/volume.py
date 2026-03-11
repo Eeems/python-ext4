@@ -95,7 +95,10 @@ class Volume(object):
         table_offset = (self.superblock.offset // block_size + 1) * block_size
         s_inodes_count = assert_cast(self.superblock.s_inodes_count, int)  # pyright: ignore[reportAny]
         s_inodes_per_group = assert_cast(self.superblock.s_inodes_per_group, int)  # pyright: ignore[reportAny]
-        for index in range(0, s_inodes_count // s_inodes_per_group):
+        for index in range(
+            0,
+            (s_inodes_count + s_inodes_per_group - 1) // s_inodes_per_group,
+        ):
             descriptor = BlockDescriptor(
                 self,
                 table_offset + (index * self.superblock.desc_size),

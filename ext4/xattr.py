@@ -62,21 +62,21 @@ class ExtendedAttributeIBodyHeader(ExtendedAttributeBase):
         i = 0
         while i < self.data_size:
             entry = ExtendedAttributeEntry(self.inode, offset + i, self.data_size - i)
-            e_name_len = assert_cast(entry.e_name_len, int)  # pyright: ignore[reportAny]
-            e_name_index = assert_cast(entry.e_name_index, int)  # pyright: ignore[reportAny]
-            e_value_offs = assert_cast(entry.e_value_offs, int)  # pyright: ignore[reportAny]
+            e_name_len = assert_cast(entry.e_name_len, int)
+            e_name_index = assert_cast(entry.e_name_index, int)
+            e_value_offs = assert_cast(entry.e_value_offs, int)
             if (e_name_len | e_name_index | e_value_offs | entry.value_inum) == 0:
                 break
 
             value: bytes
-            e_value_size = assert_cast(entry.e_value_size, int)  # pyright: ignore[reportAny]
+            e_value_size = assert_cast(entry.e_value_size, int)
             if entry.value_inum != 0:
                 inode = self.volume.inodes[entry.value_inum]
-                i_flags = assert_cast(inode.i_flags, EXT4_FL)  # pyright: ignore[reportAny]
-                if (i_flags & EXT4_FL.EA_INODE) != 0:
+                if not inode.has_flag(EXT4_FL.EA_INODE):
                     message = f"Inode {inode.i_no:d} is not marked as large extended attribute value"
                     if not self.volume.ignore_flags:
                         raise ExtendedAttributeError(message)
+
                     warnings.warn(message, RuntimeWarning)
 
                 # TODO determine if e_value_size or i_size are required to limit results?

@@ -326,10 +326,13 @@ class Inode(Ext4Struct):
         if self.tree is not None:
             self.tree.validate()
 
+    def has_flag(self, flag: EXT4_FL | int) -> bool:
+        i_flags = assert_cast(self.i_flags, EXT4_FL)  # pyright: ignore[reportAny]
+        return (i_flags & flag) != 0
+
     @property
     def is_inline(self) -> bool:
-        i_flags = assert_cast(self.i_flags, EXT4_FL)  # pyright: ignore[reportAny]
-        return (i_flags & EXT4_FL.EXTENTS) == 0
+        return not self.has_flag(EXT4_FL.EXTENTS)
 
     @property
     def extents(self) -> list[Extent]:
@@ -450,18 +453,15 @@ class Directory(Inode):
 
     @property
     def is_htree(self) -> bool:
-        i_flags = assert_cast(self.i_flags, EXT4_FL)  # pyright: ignore[reportAny]
-        return i_flags & EXT4_FL.INDEX != 0
+        return self.has_flag(EXT4_FL.INDEX)
 
     @property
     def is_casefolded(self) -> bool:
-        i_flags = assert_cast(self.i_flags, EXT4_FL)  # pyright: ignore[reportAny]
-        return i_flags & EXT4_FL.CASEFOLD != 0
+        return self.has_flag(EXT4_FL.CASEFOLD)
 
     @property
     def is_encrypted(self) -> bool:
-        i_flags = assert_cast(self.i_flags, EXT4_FL)  # pyright: ignore[reportAny]
-        return i_flags & EXT4_FL.ENCRYPT != 0
+        return self.has_flag(EXT4_FL.ENCRYPT)
 
     @property
     def hash_in_dirent(self) -> bool:

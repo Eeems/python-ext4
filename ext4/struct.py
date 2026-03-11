@@ -88,6 +88,11 @@ class Ext4Struct(LittleEndianStructure):
     def read_from_volume(self):
         _ = self.volume.seek(self.offset)
         data = self.volume.read(sizeof(self))
+        if len(data) != sizeof(self):
+            raise OSError(
+                f"Short read for {type(self).__name__} at offset {self.offset}"
+            )
+
         _ = memmove(addressof(self), data, sizeof(self))
 
     @property
