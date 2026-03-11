@@ -113,9 +113,9 @@ class DXEntriesBase(DXBase):
 
     @property
     def info_length(self) -> int:
-        parent = assert_cast(self.parent, DXEntriesBase)  # pyright: ignore[reportAny]
+        parent = self
         while not isinstance(parent, DXRoot):
-            parent = assert_cast(self.parent, DXEntriesBase)  # pyright: ignore[reportAny]
+            parent = assert_cast(parent.parent, DXEntriesBase)  # pyright: ignore[reportAny]
 
         dx_root_info = assert_cast(parent.dx_root_info, DXRootInfo)  # pyright: ignore[reportAny]
         return assert_cast(dx_root_info.info_length, int)  # pyright: ignore[reportAny]
