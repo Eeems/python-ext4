@@ -71,7 +71,7 @@ class BlockDescriptor(Ext4Struct):
         bg_free_blocks_count_lo: int = assert_cast(self.bg_free_blocks_count_lo, int)  # pyright: ignore[reportAny]
         bg_free_blocks_count_hi: int = assert_cast(self.bg_free_blocks_count_hi, int)  # pyright: ignore[reportAny]
         if self.volume.has_hi:
-            return bg_free_blocks_count_hi << 32 | bg_free_blocks_count_lo
+            return bg_free_blocks_count_hi << 16 | bg_free_blocks_count_lo
 
         return bg_free_blocks_count_lo
 
@@ -80,7 +80,7 @@ class BlockDescriptor(Ext4Struct):
         bg_free_inodes_count_lo: int = assert_cast(self.bg_free_inodes_count_lo, int)  # pyright: ignore[reportAny]
         bg_free_inodes_count_hi: int = assert_cast(self.bg_free_inodes_count_hi, int)  # pyright: ignore[reportAny]
         if self.volume.has_hi:
-            return bg_free_inodes_count_hi << 32 | bg_free_inodes_count_lo
+            return bg_free_inodes_count_hi << 16 | bg_free_inodes_count_lo
 
         return bg_free_inodes_count_lo
 
@@ -98,7 +98,7 @@ class BlockDescriptor(Ext4Struct):
         bg_used_dirs_count_lo: int = assert_cast(self.bg_used_dirs_count_lo, int)  # pyright: ignore[reportAny]
         bg_used_dirs_count_hi: int = assert_cast(self.bg_used_dirs_count_hi, int)  # pyright: ignore[reportAny]
         if self.volume.has_hi:
-            return bg_used_dirs_count_hi << 32 | bg_used_dirs_count_lo
+            return bg_used_dirs_count_hi << 16 | bg_used_dirs_count_lo
 
         return bg_used_dirs_count_lo
 
@@ -107,7 +107,7 @@ class BlockDescriptor(Ext4Struct):
         bg_block_bitmap_csum_lo: int = assert_cast(self.bg_block_bitmap_csum_lo, int)  # pyright: ignore[reportAny]
         bg_block_bitmap_csum_hi: int = assert_cast(self.bg_block_bitmap_csum_hi, int)  # pyright: ignore[reportAny]
         if self.volume.has_hi:
-            return bg_block_bitmap_csum_hi << 32 | bg_block_bitmap_csum_lo
+            return bg_block_bitmap_csum_hi << 16 | bg_block_bitmap_csum_lo
 
         return bg_block_bitmap_csum_lo
 
@@ -116,7 +116,7 @@ class BlockDescriptor(Ext4Struct):
         bg_inode_bitmap_csum_lo: int = assert_cast(self.bg_inode_bitmap_csum_lo, int)  # pyright: ignore[reportAny]
         bg_inode_bitmap_csum_hi: int = assert_cast(self.bg_inode_bitmap_csum_hi, int)  # pyright: ignore[reportAny]
         if self.volume.has_hi:
-            return bg_inode_bitmap_csum_hi << 32 | bg_inode_bitmap_csum_lo
+            return bg_inode_bitmap_csum_hi << 16 | bg_inode_bitmap_csum_lo
 
         return bg_inode_bitmap_csum_lo
 
@@ -125,7 +125,7 @@ class BlockDescriptor(Ext4Struct):
         bg_itable_unused_lo: int = assert_cast(self.bg_itable_unused_lo, int)  # pyright: ignore[reportAny]
         bg_itable_unused_hi: int = assert_cast(self.bg_itable_unused_hi, int)  # pyright: ignore[reportAny]
         if self.volume.has_hi:
-            return bg_itable_unused_hi << 32 | bg_itable_unused_lo
+            return bg_itable_unused_hi << 16 | bg_itable_unused_lo
 
         return bg_itable_unused_lo
 
