@@ -522,35 +522,36 @@ class Directory(Inode):
         dirent_inode = assert_cast(dirent.inode, int)  # pyright: ignore[reportAny]
         offset = self.volume.inodes.offset(dirent_inode)
         _ = self.volume.seek(offset + Inode.i_mode.offset)
-        i_mode = cast(
+        file_type = cast(
             MODE,
             Inode.field_type("i_mode").from_buffer_copy(  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportOptionalMemberAccess]
                 self.volume.read(Inode.i_mode.size)
-            ),
+            )
+            & 0xF000,
         )
-        if i_mode & MODE.IFIFO != 0:
+        if file_type == MODE.IFIFO:
             return EXT4_FT.FIFO  # pyright: ignore[reportReturnType]
 
-        if i_mode & MODE.IFCHR != 0:
+        if file_type == MODE.IFCHR:
             return EXT4_FT.CHRDEV  # pyright: ignore[reportReturnType]
 
-        if i_mode & MODE.IFDIR != 0:
+        if file_type == MODE.IFDIR:
             return EXT4_FT.DIR  # pyright: ignore[reportReturnType]
 
-        if i_mode & MODE.IFBLK != 0:
+        if file_type == MODE.IFBLK:
             return EXT4_FT.BLKDEV  # pyright: ignore[reportReturnType]
 
-        if i_mode & MODE.IFREG != 0:
+        if file_type == MODE.IFREG:
             return EXT4_FT.REG_FILE  # pyright: ignore[reportReturnType]
 
-        if i_mode & MODE.IFLNK != 0:
+        if file_type == MODE.IFLNK:
             return EXT4_FT.SYMLINK  # pyright: ignore[reportReturnType]
 
-        if i_mode & MODE.IFSOCK != 0:
+        if file_type == MODE.IFSOCK:
             return EXT4_FT.SOCK  # pyright: ignore[reportReturnType]
 
         raise OpenDirectoryError(
-            f"Unexpected file type {i_mode} for inode {dirent_inode}"
+            f"Unexpected file type {file_type} for inode {dirent_inode}"
         )
 
     def opendir(self):
