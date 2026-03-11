@@ -314,7 +314,7 @@ class Inode(Ext4Struct):
         provided_csum: int = 0
         l_i_checksum_lo = assert_cast(self.osd2.linux2.l_i_checksum_lo, int)  # pyright: ignore[reportAny]
         provided_csum |= l_i_checksum_lo
-        if self.has_hi:
+        if self.fits_in_hi:
             i_checksum_hi = assert_cast(self.i_checksum_hi, int)  # pyright: ignore[reportAny]
             provided_csum |= i_checksum_hi << 16
 
