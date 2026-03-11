@@ -102,7 +102,7 @@ class DirectoryEntryTail(DirectoryEntryStruct):
 
     @Ext4Struct.expected_magic.getter
     def expected_magic(self) -> int:
-        return EXT4_FT.DIR_CSUM
+        return int(EXT4_FT.DIR_CSUM)
 
 
 @final
