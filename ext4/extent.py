@@ -248,10 +248,10 @@ class ExtentTail(Ext4Struct):
 class ExtentTree(object):
     def __init__(self, inode: "Inode"):
         self.inode: "Inode" = inode
+        self.headers: list[ExtentHeader] = []
         if not self.has_extents:
             return
 
-        self.headers: list[ExtentHeader] = []
         to_process = [self.offset]
         while to_process:
             header_offset = to_process.pop(0)
@@ -270,7 +270,7 @@ class ExtentTree(object):
 
     @property
     def has_extents(self) -> bool:
-        return not self.inode.is_inline
+        return self.inode.has_extents
 
     def verify(self) -> None:
         pass

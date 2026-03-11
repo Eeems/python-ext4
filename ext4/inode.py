@@ -332,7 +332,11 @@ class Inode(Ext4Struct):
 
     @property
     def is_inline(self) -> bool:
-        return not self.has_flag(EXT4_FL.EXTENTS)
+        return self.has_flag(EXT4_FL.INLINE_DATA)
+
+    @property
+    def has_extents(self) -> bool:
+        return self.has_flag(EXT4_FL.EXTENTS)
 
     @property
     def extents(self) -> list[Extent]:
