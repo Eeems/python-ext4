@@ -46,7 +46,7 @@ mkimage test64 "$tmp_dir" 20 -O 64bit
 rm -f "$tmp_dir"/test*.txt
 echo "[test] Generating files..."
 
-echo "[test] Making image $name..."
+echo "[test] Making image test_htree..."
 chronic dd if=/dev/zero of=test_htree.ext4 count=20 bs=1048576
 chronic mkfs.ext4 -g 1024 -b 1024 -O 64bit,dir_index test_htree.ext4
 sudo mount -t ext4 test_htree.ext4 "$tmp_dir"
