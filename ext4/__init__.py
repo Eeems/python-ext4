@@ -69,6 +69,9 @@ from .xattr import ExtendedAttributeHeader
 from .xattr import ExtendedAttributeEntry
 
 from .htree import DXRoot
+from .htree import DotDirectoryEntry2
+from .htree import DXEntry
+from .htree import DXRootInfo
 
 __all__ = [
     "DX_HASH",
@@ -132,4 +135,7 @@ __all__ = [
     "ExtendedAttributeHeader",
     "ExtendedAttributeEntry",
     "DXRoot",
+    "DotDirectoryEntry2",
+    "DXEntry",
+    "DXRootInfo",
 ]

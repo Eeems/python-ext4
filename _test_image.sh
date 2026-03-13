@@ -53,6 +53,7 @@ sudo mount -t ext4 test_htree.ext4 "$tmp_dir"
 # shellcheck disable=SC2064
 trap "sudo umount;rmdir \"$tmp_dir\"" EXIT
 printf '%s\n' "$tmp_dir"/{1..20000} | xargs sudo touch
+sudo mkdir "$tmp_dir"/empty
 sudo umount "$tmp_dir"
 # shellcheck disable=SC2064
 trap "rmdir \"$tmp_dir\"" EXIT
