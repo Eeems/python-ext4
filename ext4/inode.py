@@ -14,6 +14,7 @@ from ctypes import sizeof
 
 from typing import cast
 from typing import final
+from typing import Any
 from typing import TYPE_CHECKING
 
 from cachetools import cachedmethod
@@ -478,7 +479,9 @@ class Directory(Inode):
     def hash_in_dirent(self) -> bool:
         return self.is_casefolded and self.is_encrypted
 
-    def _opendir(self):
+    def _opendir(
+        self,
+    ) -> Generator[DirectoryEntry | DirectoryEntry2, None, None]:
         if self._dirents is not None:
             for dirent in self._dirents:
                 yield dirent
@@ -561,7 +564,9 @@ class Directory(Inode):
             f"Unexpected file type {file_type} for inode {dirent_inode}"
         )
 
-    def opendir(self):
+    def opendir(
+        self,
+    ) -> Generator[tuple[DirectoryEntry | DirectoryEntry2, EXT4_FT], Any, None]:  # pyright: ignore[reportExplicitAny]
         for dirent in self._opendir():
             if isinstance(dirent, DirectoryEntry2):
                 file_type = assert_cast(dirent.file_type, EXT4_FT)  # pyright: ignore[reportAny]
@@ -600,7 +605,7 @@ class Directory(Inode):
             for dirent, _ in cwd.opendir():
                 if dirent.name_bytes == name:
                     dirent_inode = assert_cast(dirent.inode, int)  # pyright: ignore[reportAny]
-                    inode = self.inodes[dirent_inode]
+                    inode = self.volume.inodes[dirent_inode]
                     break
 
             if inode is None:
