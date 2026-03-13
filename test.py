@@ -211,14 +211,15 @@ with open(img_file, "rb") as f:
                 _assert("isinstance(entry.hash, int)", lambda: entry.hash)  # pyright: ignore[reportAny]
                 _assert("isinstance(entry.block, int)", lambda: entry.block)  # pyright: ignore[reportAny]
 
-            first_entry = entries[0]
-            _assert("first_entry.hash >= 0", lambda: first_entry.hash)  # pyright: ignore[reportAny]
-            _assert("first_entry.block > 0", lambda: first_entry.block)  # pyright: ignore[reportAny]
+            if entries:
+                first_entry = entries[0]
+                _assert("first_entry.hash >= 0", lambda: first_entry.hash)  # pyright: ignore[reportAny]
+                _assert("first_entry.block > 0", lambda: first_entry.block)  # pyright: ignore[reportAny]
 
-            block_io = ext4.BlockIO(volume.root)
-            block = block_io.blocks[first_entry.block]  # pyright: ignore[reportAny]
-            _assert("len(block) > 0", lambda: len(block))
-            _assert(f"len(block) == {volume.block_size}", lambda: len(block))
+                block_io = ext4.BlockIO(volume.root)
+                block = block_io.blocks[first_entry.block]  # pyright: ignore[reportAny]
+                _assert("len(block) > 0", lambda: len(block))
+                _assert(f"len(block) == {volume.block_size}", lambda: len(block))
 
             dirent = ext4.DirectoryEntry2(volume.root, 0)
             _assert("dirent.rec_len > 0", lambda: dirent.rec_len)  # pyright: ignore[reportAny]

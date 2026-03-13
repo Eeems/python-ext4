@@ -51,7 +51,7 @@ chronic dd if=/dev/zero of=test_htree.ext4 count=20 bs=1048576
 chronic mkfs.ext4 -g 1024 -b 1024 -O 64bit,dir_index test_htree.ext4
 sudo mount -t ext4 test_htree.ext4 "$tmp_dir"
 # shellcheck disable=SC2064
-trap "sudo umount;rmdir \"$tmp_dir\"" EXIT
+trap "sudo umount \"$tmp_dir\";rmdir \"$tmp_dir\"" EXIT
 sudo mkdir "$tmp_dir"/empty
 printf '%s\n' "$tmp_dir"/{1..200} | xargs sudo touch
 sudo umount "$tmp_dir"
