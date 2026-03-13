@@ -159,10 +159,10 @@ with open(img_file, "rb") as f:
     htree = volume.root.htree
     _assert("htree is not None")
     if htree is not None:
-        _assert("isinstance(htree.dot, ext4.DotDirectoryEntry2)", lambda: htree.dot)  # pyright: ignore[reportOptionalMemberAccess]
+        _assert("isinstance(htree.dot, ext4.DotDirectoryEntry2)", lambda: htree.dot)  # pyright: ignore[reportOptionalMemberAccess, reportAny]
         _assert(
             "isinstance(htree.dotdot, ext4.DotDirectoryEntry2)",
-            lambda: htree.dotdot,  # pyright: ignore[reportOptionalMemberAccess]
+            lambda: htree.dotdot,  # pyright: ignore[reportOptionalMemberAccess, reportAny]
         )
         _assert("htree.limit > 0")
         _assert("htree.count > 0")

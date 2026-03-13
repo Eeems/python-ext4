@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import io
+import os
+import errno
 import warnings
 
 from ctypes import LittleEndianStructure
@@ -13,6 +15,9 @@ from ctypes import sizeof
 from typing import cast
 from typing import final
 from typing import TYPE_CHECKING
+
+from cachetools import cachedmethod
+from cachetools import LRUCache
 
 from ._compat import override
 from ._compat import ReadableStream
@@ -437,6 +442,7 @@ class SymbolicLink(Inode):
 class Directory(Inode):
     def __init__(self, volume: "Volume", offset: int, i_no: int):
         super().__init__(volume, offset, i_no)
+        self._inode_at_cache: LRUCache[str | bytes, Inode] = LRUCache(maxsize=32)
         self._dirents: None | list[DirectoryEntry | DirectoryEntry2] = None
         self.htree: DXRoot | None = None
         if self.is_htree:
@@ -569,3 +575,37 @@ class Directory(Inode):
                 file_type = self._get_file_type(dirent)
 
             yield dirent, file_type
+
+    @cachedmethod(lambda self: self._inode_at_cache)  # pyright: ignore[reportAny]
+    def inode_at(self, path: str | bytes) -> Inode:
+        if (isinstance(path, str) and path.startswith("/")) or (
+            isinstance(path, bytes) and path.startswith(b"/")
+        ):
+            return self.volume.inode_at(path)
+
+        if isinstance(path, bytes):
+            path = path.decode("utf-8")
+
+        paths = list(self.volume.path_tuple(f"/{path}"))
+        cwd = self
+        if not paths:
+            return cwd
+
+        while paths:
+            if not isinstance(cwd, Directory):
+                raise OSError(errno.ENOTDIR, os.strerror(errno.ENOTDIR))
+
+            name = paths.pop(0)
+            inode = None
+            for dirent, _ in cwd.opendir():
+                if dirent.name_bytes == name:
+                    dirent_inode = assert_cast(dirent.inode, int)  # pyright: ignore[reportAny]
+                    inode = self.inodes[dirent_inode]
+                    break
+
+            if inode is None:
+                raise FileNotFoundError(path)
+
+            cwd = inode
+
+        return cwd
