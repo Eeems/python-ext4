@@ -126,6 +126,8 @@ for img_file in ("test32.ext4", "test64.ext4"):
             continue
 
         test_root_inode(volume)
+        _assert('volume.root.inode_at("test.txt") == volume.inode_at("/test.txt")')
+        _assert('volume.root.inode_at("/test.txt") == volume.inode_at("/test.txt")')
         inode = cast(ext4.File, volume.inode_at("/test.txt"))
         _assert("isinstance(inode, ext4.File)")
         b = inode.open()
