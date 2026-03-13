@@ -47,6 +47,7 @@ jobs:
             test32.ext4.tmp
             test64.ext4
             test64.ext4.tmp
+            test_htree.ext4
           if-no-files-found: error
   test:
     name: Test on ${{ matrix.os }} python ${{ matrix.python }}
