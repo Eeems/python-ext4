@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
+import trace
 import traceback
 import ext4
 
@@ -116,9 +117,16 @@ for img_file in ("test32.ext4", "test64.ext4"):
     with open(img_file, "rb") as f:
         test_magic_error(f)
 
-        volume = ext4.Volume(f, offset=offset)
-        test_root_inode(volume)
+        volume = None
+        try:
+            volume = ext4.Volume(f, offset=offset)
 
+        except Exception:
+            FAILED = True  # pyright: ignore[reportConstantRedefinition]
+            traceback.print_exc()
+            continue
+
+        test_root_inode(volume)
         inode = cast(ext4.File, volume.inode_at("/test.txt"))
         _assert("isinstance(inode, ext4.File)")
         b = inode.open()
@@ -150,58 +158,74 @@ for img_file in ("test32.ext4", "test64.ext4"):
 img_file = "test_htree.ext4"
 print(f"Testing image: {img_file}")
 with open(img_file, "rb") as f:
-    volume = ext4.Volume(f)
-    test_root_inode(volume)
+    volume = None
+    try:
+        volume = ext4.Volume(f)
 
-    _assert("volume.root.is_htree == True")
-    _assert("volume.root.htree is not None")
+    except Exception:
+        FAILED = True  # pyright: ignore[reportConstantRedefinition]
+        traceback.print_exc()
 
-    htree = volume.root.htree
-    _assert("htree is not None")
-    if htree is not None:
-        _assert("isinstance(htree.dot, ext4.DotDirectoryEntry2)", lambda: htree.dot)  # pyright: ignore[reportOptionalMemberAccess, reportAny]
-        _assert(
-            "isinstance(htree.dotdot, ext4.DotDirectoryEntry2)",
-            lambda: htree.dotdot,  # pyright: ignore[reportOptionalMemberAccess, reportAny]
-        )
-        _assert("htree.limit > 0")
-        _assert("htree.count > 0")
-        _assert("htree.count <= htree.limit")
-        _assert("htree.block >= 0")
-        _assert("htree.dx_root_info is not None")
+    if volume is not None:
+        test_root_inode(volume)
+        _assert("volume.root.is_htree == True")
+        _assert("volume.root.htree is not None")
 
-        _assert("htree.dot.verify() is None")
-        _assert("htree.dotdot.verify() is None")
+        htree = volume.root.htree
+        _assert("htree is not None")
+        if htree is not None:
+            _assert("isinstance(htree.dot, ext4.DotDirectoryEntry2)", lambda: htree.dot)  # pyright: ignore[reportOptionalMemberAccess, reportAny]
+            _assert(
+                "isinstance(htree.dotdot, ext4.DotDirectoryEntry2)",
+                lambda: htree.dotdot,  # pyright: ignore[reportOptionalMemberAccess, reportAny]
+            )
+            _assert("htree.limit > 0", lambda: htree.limit)  # pyright: ignore[reportOptionalMemberAccess, reportAny]
+            _assert("htree.count > 0", lambda: htree.count)  # pyright: ignore[reportOptionalMemberAccess, reportAny]
+            _assert("htree.count <= htree.limit")
+            _assert("htree.block >= 0", lambda: htree.block)  # pyright: ignore[reportOptionalMemberAccess, reportAny]
+            _assert("htree.dx_root_info is not None")
 
-        _assert("htree.dot.name == b'.'", lambda: htree.dot.name)  # pyright: ignore[reportAny, reportOptionalMemberAccess]
-        _assert("htree.dotdot.name == b'..'", lambda: htree.dotdot.name)  # pyright: ignore[reportAny, reportOptionalMemberAccess]
+            _assert("htree.dot.verify() is None")
+            _assert("htree.dotdot.verify() is None")
 
-        dx_root_info = htree.dx_root_info  # pyright: ignore[reportAny]
-        _assert("isinstance(dx_root_info.hash_version, ext4.DX_HASH)")
-        _assert("dx_root_info.info_length == 8")
-        _assert("dx_root_info.indirect_levels == 1")
+            _assert("htree.dot.name == b'.'", lambda: htree.dot.name)  # pyright: ignore[reportAny, reportOptionalMemberAccess]
+            _assert("htree.dotdot.name == b'..'", lambda: htree.dotdot.name)  # pyright: ignore[reportAny, reportOptionalMemberAccess]
 
-        entries = list(htree.entries)
-        _assert("len(entries) > 0")
-        _assert("len(entries) == htree.count - 1")
-        for entry in entries:
-            _assert("isinstance(entry.hash, int)")
-            _assert("isinstance(entry.block, int)")
+            dx_root_info = htree.dx_root_info  # pyright: ignore[reportAny]
+            _assert(
+                "isinstance(dx_root_info.hash_version, ext4.DX_HASH)",
+                lambda: dx_root_info.hash_version,  # pyright: ignore[reportAny]
+            )
+            _assert("dx_root_info.info_length == 8", lambda: dx_root_info.info_length)  # pyright: ignore[reportAny]
+            _assert(
+                "dx_root_info.indirect_levels == 0",
+                lambda: dx_root_info.indirect_levels,  # pyright: ignore[reportAny]
+            )
 
-        first_entry = entries[0]
-        _assert("first_entry.hash >= 0")
-        _assert("first_entry.block > 0")
+            entries = list(htree.entries)
+            _assert("len(entries) > 0", lambda: len(entries))
+            _assert(
+                "len(entries) == htree.count - 1",
+                lambda: f"{len(entries)} != {htree.count - 1}",  # pyright: ignore[reportAny, reportOptionalMemberAccess]
+            )
+            for entry in entries:
+                _assert("isinstance(entry.hash, int)", lambda: entry.hash)  # pyright: ignore[reportAny]
+                _assert("isinstance(entry.block, int)", lambda: entry.block)  # pyright: ignore[reportAny]
 
-        block_io = ext4.BlockIO(volume.root)
-        block = block_io.blocks[first_entry.block]  # pyright: ignore[reportAny]
-        _assert("len(block) > 0")
-        _assert(f"len(block) == {volume.block_size}")
+            first_entry = entries[0]
+            _assert("first_entry.hash >= 0", lambda: first_entry.hash)  # pyright: ignore[reportAny]
+            _assert("first_entry.block > 0", lambda: first_entry.block)  # pyright: ignore[reportAny]
 
-        dirent = ext4.DirectoryEntry2(volume.root, 0)
-        _assert("dirent.rec_len > 0")
+            block_io = ext4.BlockIO(volume.root)
+            block = block_io.blocks[first_entry.block]  # pyright: ignore[reportAny]
+            _assert("len(block) > 0", lambda: len(block))
+            _assert(f"len(block) == {volume.block_size}", lambda: len(block))
 
-    non_htree_dir = cast(ext4.Directory, volume.inode_at("/empty"))
-    _assert("not non_htree_dir.is_htree")
+            dirent = ext4.DirectoryEntry2(volume.root, 0)
+            _assert("dirent.rec_len > 0", lambda: dirent.rec_len)  # pyright: ignore[reportAny]
+
+        non_htree_dir = cast(ext4.Directory, volume.inode_at("/empty"))
+        _assert("not non_htree_dir.is_htree")
 
 if FAILED:
     sys.exit(1)

@@ -160,3 +160,4 @@ cython_debug/
 #.idea/
 
 *.ext4
+*.ext4.tmp
