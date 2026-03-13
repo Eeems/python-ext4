@@ -119,8 +119,8 @@ class Volume(object):
         return self.inodes[EXT4_INO.BAD]
 
     @property
-    def root(self):
-        return self.inodes[EXT4_INO.ROOT]
+    def root(self) -> Directory:
+        return assert_cast(self.inodes[EXT4_INO.ROOT], Directory)
 
     @property
     def user_quota(self):

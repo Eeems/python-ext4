@@ -142,7 +142,21 @@ print(f"Testing image: {img_file}")
 with open(img_file, "rb") as f:
     volume = ext4.Volume(f)
     _assert("volume.root.is_htree")
-    test_root_inode(volume)
+    htree = volume.root.htree
+    _assert("htree is not None")
+    if htree is not None:
+        test_root_inode(volume)
+        dx_root_info = htree.dx_root_info  # pyright: ignore[reportAny]
+        _assert("dx_root_info.hash_version is not None")
+        _assert("dx_root_info.info_length > 0")
+        _assert("dx_root_info.indirect_levels >= 0")
+        _assert("htree.limit > 0")
+        _assert("htree.count > 0")
+        entries = list(htree.entries)
+        _assert("len(entries) > 0")
+        first_entry = entries[0]
+        _assert("first_entry.hash >= 0")
+        _assert("first_entry.block > 0")
 
 if FAILED:
     sys.exit(1)

@@ -438,8 +438,9 @@ class Directory(Inode):
     def __init__(self, volume: "Volume", offset: int, i_no: int):
         super().__init__(volume, offset, i_no)
         self._dirents: None | list[DirectoryEntry | DirectoryEntry2] = None
+        self.htree: DXRoot | None = None
         if self.is_htree:
-            self.htree: DXRoot | None = DXRoot(self)
+            self.htree = DXRoot(self)
 
     @override
     def verify(self):
