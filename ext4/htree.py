@@ -11,7 +11,6 @@ from ctypes import memmove
 from ctypes import LittleEndianStructure
 
 from typing import final
-from typing import cast
 from typing import TYPE_CHECKING
 
 from collections.abc import Generator
@@ -28,7 +27,18 @@ if TYPE_CHECKING:
 
 
 class LittleEndianStructureWithVolume(LittleEndianStructure):
-    volume: "Volume | None" = None
+    def __init__(self):
+        super().__init__()
+        self._volume: "Volume | None" = None
+
+    @property
+    def volume(self) -> "Volume":
+        assert self._volume is not None
+        return self._volume
+
+    @volume.setter
+    def volume(self, volume: "Volume") -> None:
+        self._volume = volume
 
 
 @final
@@ -45,7 +55,7 @@ class DotDirectoryEntry2(LittleEndianStructureWithVolume):
 
     def verify(self) -> None:
         name = assert_cast(self.name, bytes)  # pyright: ignore[reportAny]
-        if name in (b".\0\0\0", b"..\0\0"):
+        if name in (b".", b".."):
             return
 
         message = f"{self} dot or dotdot entry name invalid! actual={name}"
@@ -141,8 +151,6 @@ class DXRoot(DXEntriesBase):
 
     def __init__(self, inode: "Directory"):
         super().__init__(inode, 0)
-        cast(DotDirectoryEntry2, self.dot).volume = inode.volume
-        cast(DotDirectoryEntry2, self.dotdot).volume = inode.volume
 
 
 @final
