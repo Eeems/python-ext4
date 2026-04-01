@@ -56,7 +56,7 @@ ${VENV_BIN_ACTIVATE}: pyproject.toml
 	python -m pip install \
 	  --require-virtualenv \
 	  --editable \
-	  .;
+	  .[dev];
 
 .PHONY: test
 test: ${VENV_BIN_ACTIVATE}
@@ -83,12 +83,8 @@ fuzz: ${VENV_BIN_ACTIVATE}
 all: release
 
 .PHONY: lint
-lint: $(VENV_BIN_ACTIVATE)
+lint: $(VENV_BIN_ACTIVATE); \
 	@. ${VENV_BIN_ACTIVATE}; \
-	python -m pip install \
-	  --require-virtualenv \
-	  --editable \
-	  .[dev]; \
 	python -m pip install \
 	  --require-virtualenv \
 	  --editable \
@@ -102,12 +98,8 @@ lint: $(VENV_BIN_ACTIVATE)
 	python -m basedpyright
 
 .PHONY: lint-fix
-lint-fix: $(VENV_BIN_ACTIVATE)
+lint-fix: $(VENV_BIN_ACTIVATE); \
 	@. ${VENV_BIN_ACTIVATE}; \
-	python -m pip install \
-	  --require-virtualenv \
-	  --editable \
-	  .[dev]; \
 	python -m pip install \
 	  --require-virtualenv \
 	  --editable \
@@ -122,20 +114,10 @@ lint-fix: $(VENV_BIN_ACTIVATE)
 
 .PHONY: format
 format: $(VENV_BIN_ACTIVATE)
-	@. ${VENV_BIN_ACTIVATE}; \
-	python -m pip install \
-	  --require-virtualenv \
-	  --editable \
-	  .[dev]
 	. $(VENV_BIN_ACTIVATE); \
 	python -m ruff format --diff
 
 .PHONY: format-fix
 format-fix: $(VENV_BIN_ACTIVATE)
-	@. ${VENV_BIN_ACTIVATE}; \
-	python -m pip install \
-	  --require-virtualenv \
-	  --editable \
-	  .[dev]
 	. $(VENV_BIN_ACTIVATE); \
 	python -m ruff format
