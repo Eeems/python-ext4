@@ -106,19 +106,19 @@ class Ext4Struct(LittleEndianStructure):
         return sizeof(self)
 
     @property
-    def magic(self) -> None:
+    def magic(self) -> int | None:
         return None
 
     @property
-    def expected_magic(self) -> None:
+    def expected_magic(self) -> int | None:
         return None
 
     @property
-    def checksum(self) -> None:
+    def checksum(self) -> int | None:
         return None
 
     @property
-    def expected_checksum(self) -> None:
+    def expected_checksum(self) -> int | None:
         return None
 
     @property
