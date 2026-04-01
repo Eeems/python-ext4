@@ -12,13 +12,22 @@ jobs:
   lint:
     name: Lint code
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python:
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
+          - "3.14"
     steps:
       - name: Checkout the Git repository
         uses: actions/checkout@v4
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.14
+          python-version: ${{ matrix.python }}
           cache: "pip"
       - name: Lint code
         shell: bash
