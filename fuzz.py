@@ -169,8 +169,8 @@ class FuzzableStream(PeekableStream):
             result = bytearray(num_inodes * inode_size)
 
             # Determine which inodes get special flags based on data bytes
-            extents_inodes = {1, 10} if self._enable_extents else set()
-            htree_inodes = {2, 9, 11} if self._enable_htree else set()
+            extents_inodes: set[int] = {1, 10} if self._enable_extents else set()
+            htree_inodes: set[int] = {2, 9, 11} if self._enable_htree else set()
             dir_inodes = {2, 9, 11}
 
             for i in range(1, num_inodes + 1):
@@ -363,7 +363,7 @@ class FuzzableStream(PeekableStream):
         return self._cursor
 
 
-def TestOneInput(data: bytes) -> None:
+def TestOneInput(data: bytes) -> None:  # noqa: PLR0912
     if len(data) < MIN_DATA_SIZE:
         return
 
@@ -376,19 +376,19 @@ def TestOneInput(data: bytes) -> None:
         ignore_magic=True,
         ignore_attr_name_index=True,
     )
-    if not isinstance(vol.inodes[EXT4_INO.ROOT], Directory):
+
+    try:
+        if not isinstance(vol.inodes[EXT4_INO.ROOT], Directory):
+            return
+
+    except InodeError:
         return
 
     _ = vol.superblock
     for bd in vol.group_descriptors:
         _ = bd.bg_block_bitmap
 
-    try:
-        root = vol.root
-
-    except InodeError:
-        return
-
+    root = vol.root
     htree = root.htree
     if htree is not None:
         for _ in htree.entries:
