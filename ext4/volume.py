@@ -3,7 +3,6 @@ from __future__ import annotations
 import errno
 import io
 import os
-import sys
 from pathlib import PurePosixPath
 from uuid import UUID
 
@@ -109,14 +108,6 @@ class Volume:
                 self,
                 table_offset + (index * self.superblock.desc_size),
                 index,
-            )
-            print(
-                f"DEBUG: Created BlockDescriptor {index} at offset {table_offset + (index * self.superblock.desc_size)}",
-                file=sys.stderr,
-            )
-            print(
-                f"DEBUG:   bg_inode_table = {descriptor.bg_inode_table}",
-                file=sys.stderr,
             )
             descriptor.verify()
             self.group_descriptors.insert(index, descriptor)

@@ -3,9 +3,18 @@ import sys
 
 import atheris
 
+MIN_DATA_SIZE = 128 * 1024  # 128KB
+
+seed_file = os.path.join("corpus", "seed", "seed.bin")
+if not os.path.exists(seed_file) or os.path.getsize(seed_file) != MIN_DATA_SIZE:
+    os.makedirs(os.path.dirname(seed_file), exist_ok=True)
+    with open(seed_file, "wb") as f:
+        _ = f.write(b"\x00" * MIN_DATA_SIZE)
+
 with atheris.instrument_imports():  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
     from ext4 import (
         File,
+        InodeError,
         SymbolicLink,
         Volume,
     )
@@ -13,9 +22,6 @@ with atheris.instrument_imports():  # pyright: ignore[reportAttributeAccessIssue
         PeekableStream,
         override,
     )
-
-
-MIN_DATA_SIZE = 128 * 1024  # 128KB
 
 
 class FuzzableStream(PeekableStream):
@@ -209,9 +215,21 @@ def TestOneInput(data: bytes) -> None:
     for bd in vol.group_descriptors:
         _ = bd.bg_block_bitmap
 
-    root = vol.root
+    try:
+        root = vol.root
+
+    except InodeError:
+        return
+
     for dirent, _ in root.opendir():
         _ = dirent.name_bytes
+
+    try:
+        for _ in vol.inodes:
+            pass
+
+    except InodeError:
+        return
 
     for inode in [
         vol.inodes[1],  # File
