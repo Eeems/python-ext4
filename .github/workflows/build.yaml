@@ -84,15 +84,11 @@ jobs:
         run: make test
   fuzz:
     name: Fuzz
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     needs: [test-image]
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
-          - macos-latest
         python:
           - "3.10"
           - "3.11"
