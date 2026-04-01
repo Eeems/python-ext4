@@ -82,6 +82,34 @@ jobs:
       - name: Run test
         shell: bash
         run: make test
+  fuzz:
+    name: Fuzz
+    runs-on: ${{ matrix.os }}
+    needs: [test-image]
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+        python:
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
+          #- "3.14" # not supported by atheris yet
+    steps:
+      - name: Checkout the Git repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: "pip"
+      - name: Run test
+        shell: bash
+        run: make fuzz
   build:
     name: Build pip package
     runs-on: ubuntu-latest
@@ -106,7 +134,7 @@ jobs:
   publish:
     name: Publish to PyPi
     if: github.repository == 'Eeems/python-ext4' && github.event_name == 'release' && startsWith(github.ref, 'refs/tags')
-    needs: [build]
+    needs: [build, fuzz]
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -128,7 +156,7 @@ jobs:
   release:
     name: Add pip to release
     if: github.repository == 'Eeems/python-ext4' && github.event_name == 'release' && startsWith(github.ref, 'refs/tags')
-    needs: [build]
+    needs: [build, fuzz]
     runs-on: ubuntu-latest
     permissions:
       contents: write
