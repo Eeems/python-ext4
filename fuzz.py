@@ -4,39 +4,42 @@ import sys
 import atheris
 
 with atheris.instrument_imports():  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
-    from ext4 import Volume
+    from ext4 import (
+        File,
+        SymbolicLink,
+        Volume,
+    )
+    from ext4._compat import (
+        PeekableStream,
+        override,
+    )
 
 
 MIN_DATA_SIZE = 128 * 1024  # 128KB
 
 
-class FuzzableStream(atheris.FuzzedDataProvider):  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType,reportUntypedBaseClass]
+class FuzzableStream(PeekableStream):
     SUPERBLOCK_OFFSET: int = 0x400
     SUPERBLOCK_MAGIC_OFFSET: int = SUPERBLOCK_OFFSET + 0x38  # 0x438
 
     def __init__(self, data: bytes) -> None:
-        # Pass to parent for fuzzing
-        super().__init__(data)   # pyright: ignore[reportUnknownMemberType]
-
-        # Pad data to minimum size for reading
-        if len(data) < MIN_DATA_SIZE:
-            data = data + b"\x00" * (MIN_DATA_SIZE - len(data))
-
-        self._data: bytearray = bytearray(data)
-
-        self._view: memoryview[bytearray] = memoryview(self._data)
+        self._view: memoryview[bytearray] = memoryview(data)
         self._cursor: int = 0
 
-    def read(self, size: int) -> bytes:
+    @override
+    def read(self, size: int | None = None) -> bytes:
         result = self.peek(size)
         self._cursor += len(result)
         return result
 
-    def peek(self, size: int) -> bytes:
+    @override
+    def peek(self, size: int | None = None) -> bytes:  # noqa: PLR0915
         offset = self._cursor
+        if size is None:
+            size = len(self._view) - offset
+
         end = offset + size
 
-        # Check if read overlaps with superblock region
         sb_start = self.SUPERBLOCK_OFFSET
         sb_end = sb_start + 256  # Superblock is 256 bytes
         if offset < sb_end and end >= sb_start:
@@ -109,8 +112,9 @@ class FuzzableStream(atheris.FuzzedDataProvider):  # pyright: ignore[reportAttri
         if offset < bgdt_end and end >= bgdt_start:
             # Generate valid block descriptor
             result = bytearray(bgdt_size)
-            # bg_inode_table at offset 8 (for the lo part)
-            result[8:12] = (2048).to_bytes(4, "little")  # inode table at block 2
+            # bg_inode_table_lo at offset 8
+            # Set to block 2 = 2
+            result[8:12] = (2).to_bytes(4, "little")
             return bytes(result)
 
         # Check if reading inode table (at block 2, offset 2048 for 1K blocks)
@@ -121,34 +125,54 @@ class FuzzableStream(atheris.FuzzedDataProvider):  # pyright: ignore[reportAttri
             num_inodes * inode_size
         )  # 32 inodes * 128 bytes
 
-        # Check if we're reading within the inode table area OR might overlap with it
-        # Allow reading from offset 0 up to inode_table_end
-        if offset < inode_table_end and end > 0:
+        # Only serve generated inode table for reads in the exact inode table region (2048-4096)
+        if offset >= inode_table_start and offset < inode_table_end:
             # Create valid inode data for inodes 1-32
             result = bytearray(num_inodes * inode_size)
 
+            # Inode 1 - Regular file (IFREG = 0x8000)
+            result[0:2] = b"\x00\x80"
+
             # Root inode (inode 2) - set as directory (IFDIR = 0x4000)
-            root_inode_offset = (2 - 1) * inode_size  # inode 2 is at index 1
-            result[root_inode_offset : root_inode_offset + 2] = (
-                b"\x00\x40"  # i_mode = IFDIR
-            )
+            result[128:130] = b"\x00\x40"  # IFDIR
 
-            # Bad blocks inode (inode 6)
-            bad_inode_offset = (6 - 1) * inode_size
-            result[bad_inode_offset : bad_inode_offset + 2] = b"\x00\x20"  # IFBLK
+            # Inode 3 - Symbolic link (IFLNK = 0xA000)
+            result[256:258] = b"\x00\xa0"
 
-            # Journal inode (inode 11)
-            journal_inode_offset = (11 - 1) * inode_size
-            result[journal_inode_offset : journal_inode_offset + 2] = (
-                b"\x00\x40"  # IFDIR
-            )
+            # Inode 4 - Socket (IFSOCK = 0xC000)
+            result[384:386] = b"\x00\xc0"
 
-            # Boot loader inode (inode 5)
-            boot_inode_offset = (5 - 1) * inode_size
-            result[boot_inode_offset : boot_inode_offset + 2] = b"\x00\x20"  # IFBLK
+            # Boot loader inode (inode 5) - Block device (IFBLK = 0x6000)
+            result[512:514] = b"\x00\x60"  # IFBLK
 
-            # Extract the portion requested
-            start = offset  # Read starts at offset 128, so start at 128 in our generated table
+            # Bad blocks inode (inode 6) - Block device (IFBLK = 0x6000)
+            result[640:642] = b"\x00\x60"  # IFBLK
+
+            # Inode 7 - Character device (IFCHR = 0x2000)
+            result[768:770] = b"\x00\x20"
+
+            # Inode 8 - FIFO (IFIFO = 0x1000)
+            result[896:898] = b"\x00\x10"
+
+            # Inode 9 - Another directory
+            result[1024:1026] = b"\x00\x40"
+
+            # Inode 10 - Another file
+            result[1152:1154] = b"\x00\x80"
+
+            # Journal inode (inode 11) - set as directory (IFDIR = 0x4000)
+            result[1280:1282] = b"\x00\x40"
+
+            # Inode 12-32 - Mix of files and directories
+            for i in range(12, 33):
+                inode_offset = (i - 1) * inode_size
+                file_type = 0x40 if i % 3 == 0 else 0x80  # Alternate IFDIR and IFREG
+                result[inode_offset : inode_offset + 2] = file_type.to_bytes(
+                    2, "little"
+                )
+
+            # Extract the portion requested relative to inode table start
+            start = offset - inode_table_start
             return bytes(result[start : start + size])
 
         return self._view[offset:end].tobytes()
@@ -156,12 +180,16 @@ class FuzzableStream(atheris.FuzzedDataProvider):  # pyright: ignore[reportAttri
     def seek(self, offset: int, mode: int | None = None) -> int:
         if mode is None:
             mode = os.SEEK_SET
+
         if mode == os.SEEK_SET:
             self._cursor = offset
+
         elif mode == os.SEEK_CUR:
             self._cursor += offset
+
         elif mode == os.SEEK_END:
-            self._cursor = len(self._data) + offset
+            self._cursor = len(self._view) + offset
+
         return self._cursor
 
     def tell(self) -> int:
@@ -169,6 +197,9 @@ class FuzzableStream(atheris.FuzzedDataProvider):  # pyright: ignore[reportAttri
 
 
 def TestOneInput(data: bytes) -> None:
+    if len(data) < MIN_DATA_SIZE:
+        return
+
     stream = FuzzableStream(data)
 
     vol = Volume(stream)
@@ -180,8 +211,33 @@ def TestOneInput(data: bytes) -> None:
     for dirent, _ in root.opendir():
         _ = dirent.name_bytes
 
+    for inode in [
+        vol.inodes[1],  # File
+        vol.inodes[2],  # Directory (root)
+        vol.inodes[3],  # SymbolicLink
+        vol.inodes[4],  # Socket
+        vol.inodes[5],  # BlockDevice
+        vol.inodes[6],  # BlockDevice (bad blocks)
+        vol.inodes[7],  # CharacterDevice
+        vol.inodes[8],  # Fifo
+        vol.inodes[9],  # Directory
+        vol.inodes[10],  # File
+        vol.inodes[11],  # Directory (journal)
+    ]:
+        _ = inode.extents
+        _ = inode.i_size
+        if isinstance(inode, File):
+            _ = inode.open()
+
+        if isinstance(inode, SymbolicLink):
+            _ = inode.readlink()
+
     while next(vol.inodes[2].xattrs, None) is not None:
         pass
+
+    _ = vol.bad_blocks
+    _ = vol.boot_loader
+    _ = vol.journal
 
 
 argv = [sys.argv[0], "corpus", "-timeout=10", *sys.argv[1:]]
