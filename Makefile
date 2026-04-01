@@ -83,7 +83,7 @@ fuzz: ${VENV_BIN_ACTIVATE}
 all: release
 
 .PHONY: lint
-lint: $(VENV_BIN_ACTIVATE); \
+lint: $(VENV_BIN_ACTIVATE);
 	@. ${VENV_BIN_ACTIVATE}; \
 	python -m pip install \
 	  --require-virtualenv \
