@@ -1,5 +1,6 @@
 import os
 import sys
+from typing import final
 
 import atheris
 
@@ -26,6 +27,7 @@ with atheris.instrument_imports():  # pyright: ignore[reportAttributeAccessIssue
     )
 
 
+@final
 class FuzzableStream(PeekableStream):
     SUPERBLOCK_OFFSET: int = 0x400
     SUPERBLOCK_MAGIC_OFFSET: int = SUPERBLOCK_OFFSET + 0x38  # 0x438
