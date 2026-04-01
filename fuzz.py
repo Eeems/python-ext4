@@ -210,7 +210,13 @@ def TestOneInput(data: bytes) -> None:
 
     stream = FuzzableStream(data)
 
-    vol = Volume(stream)
+    vol = Volume(
+        stream,
+        ignore_checksum=True,
+        ignore_flags=True,
+        ignore_magic=True,
+        ignore_attr_name_index=True,
+    )
     _ = vol.superblock
     for bd in vol.group_descriptors:
         _ = bd.bg_block_bitmap
