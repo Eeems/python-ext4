@@ -30,7 +30,7 @@ class InvalidStreamException(Exception):
 
 
 class Inodes:
-    def __init__(self, volume: Volume):
+    def __init__(self, volume: Volume) -> None:
         self.volume: Volume = volume
         self._group_cache: dict[int, tuple[int, int]] = {}
         self._offset_cache: LRUCache[int, int] = LRUCache(maxsize=32)
@@ -61,7 +61,7 @@ class Inodes:
         return table_offset + table_entry_index * s_inode_size
 
     @cachedmethod(lambda self: self._getitem_cache)  # pyright: ignore[reportAny]
-    def __getitem__(self, index: int):
+    def __getitem__(self, index: int) -> Inode:
         offset = self.offset(index)
         return Inode(self.volume, offset, index)
 
@@ -75,7 +75,7 @@ class Volume:
         ignore_magic: bool = False,
         ignore_checksum: bool = False,
         ignore_attr_name_index: bool = False,
-    ):
+    ) -> None:
         errors: list[str] = []
         for name in ("read", "peek", "tell", "seek"):
             if not hasattr(stream, name):
@@ -110,20 +110,26 @@ class Volume:
                 table_offset + (index * self.superblock.desc_size),
                 index,
             )
-            print(f"DEBUG: Created BlockDescriptor {index} at offset {table_offset + (index * self.superblock.desc_size)}", file=sys.stderr)
-            print(f"DEBUG:   bg_inode_table = {descriptor.bg_inode_table}", file=sys.stderr)
+            print(
+                f"DEBUG: Created BlockDescriptor {index} at offset {table_offset + (index * self.superblock.desc_size)}",
+                file=sys.stderr,
+            )
+            print(
+                f"DEBUG:   bg_inode_table = {descriptor.bg_inode_table}",
+                file=sys.stderr,
+            )
             descriptor.verify()
             self.group_descriptors.insert(index, descriptor)
 
         self.inodes: Inodes = Inodes(self)
         self._inode_at_cache: LRUCache[str | bytes, Inode] = LRUCache(maxsize=32)
 
-    def __len__(self):
+    def __len__(self) -> int:
         _ = self.stream.seek(0, io.SEEK_END)
         return self.stream.tell() - self.offset
 
     @property
-    def bad_blocks(self):
+    def bad_blocks(self) -> Inode:
         return self.inodes[EXT4_INO.BAD]
 
     @property
@@ -131,23 +137,23 @@ class Volume:
         return assert_cast(self.inodes[EXT4_INO.ROOT], Directory)
 
     @property
-    def user_quota(self):
+    def user_quota(self) -> Inode:
         return self.inodes[EXT4_INO.USR_QUOTA]
 
     @property
-    def group_quota(self):
+    def group_quota(self) -> Inode:
         return self.inodes[EXT4_INO.GRP_QUOTA]
 
     @property
-    def boot_loader(self):
+    def boot_loader(self) -> Inode:
         return self.inodes[EXT4_INO.BOOT_LOADER]
 
     @property
-    def undelete_directory(self):
+    def undelete_directory(self) -> Inode:
         return self.inodes[EXT4_INO.UNDEL_DIR]
 
     @property
-    def journal(self):
+    def journal(self) -> Inode:
         return self.inodes[EXT4_INO.JOURNAL]
 
     @property
@@ -155,12 +161,12 @@ class Volume:
         return self.superblock.has_hi
 
     @property
-    def uuid(self):
+    def uuid(self) -> UUID:
         s_uuid = assert_cast(bytes(self.superblock.s_uuid), bytes)  # pyright: ignore[reportAny]
         return UUID(bytes=s_uuid)
 
     @property
-    def seed(self):
+    def seed(self) -> int:
         return self.superblock.seed
 
     @property
@@ -205,7 +211,7 @@ class Volume:
     def tell(self) -> int:
         return self.cursor
 
-    def block_read(self, index: int, count: int = 1):
+    def block_read(self, index: int, count: int = 1) -> bytes:
         assert index >= 0
         assert count > 0
         block_size = self.block_size  # Only calculate once

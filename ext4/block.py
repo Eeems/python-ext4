@@ -3,33 +3,35 @@ import errno
 import io
 from typing import TYPE_CHECKING
 
-from ._compat import override  # pyright: ignore[reportAttributeAccessIssue]
+from ._compat import override
 
 if TYPE_CHECKING:
+    from .extent import Extent
     from .inode import Inode
+    from .volume import Volume
 
 
 class BlockIOBlocks:
-    def __init__(self, blockio: "BlockIO"):
+    def __init__(self, blockio: "BlockIO") -> None:
         self.blockio: BlockIO = blockio
         self._null_block: bytearray = bytearray(self.block_size)
 
     @property
-    def block_size(self):
+    def block_size(self) -> int:
         return self.blockio.block_size
 
     @property
-    def volume(self):
+    def volume(self) -> "Volume":
         return self.blockio.inode.volume
 
-    def __contains__(self, ee_block: int):
+    def __contains__(self, ee_block: int) -> bool:
         for extent in self.blockio.extents:
             if ee_block in extent.blocks:
                 return True
 
         return False
 
-    def __getitem__(self, ee_block: int):
+    def __getitem__(self, ee_block: int) -> bytearray | bytes:
         for extent in self.blockio.extents:
             if ee_block not in extent.blocks:
                 continue
@@ -40,17 +42,17 @@ class BlockIOBlocks:
 
 
 class BlockIO(io.RawIOBase):
-    def __init__(self, inode: "Inode"):
+    def __init__(self, inode: "Inode") -> None:
         super().__init__()
         self.inode: Inode = inode
         self.cursor: int = 0
         self.blocks: BlockIOBlocks = BlockIOBlocks(self)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.inode.i_size
 
     @property
-    def extents(self):
+    def extents(self) -> "list[Extent]":
         return self.inode.extents
 
     @property

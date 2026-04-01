@@ -14,7 +14,7 @@ from typing import (
 )
 
 from crcmod import (
-    mkCrcFun,  # pyright: ignore[reportMissingTypeStubs, reportUnknownVariableType]
+    mkCrcFun,  # pyright: ignore[reportUnknownVariableType]
 )
 
 if TYPE_CHECKING:
@@ -74,7 +74,7 @@ def to_hex(data: int | list[int] | bytes | None) -> str:
 
 
 class Ext4Struct(LittleEndianStructure):
-    def __init__(self, volume: "Volume", offset: int):
+    def __init__(self, volume: "Volume", offset: int) -> None:
         super().__init__()
         self.volume: Volume = volume
         self.offset: int = offset
@@ -91,7 +91,7 @@ class Ext4Struct(LittleEndianStructure):
 
         return None
 
-    def read_from_volume(self):
+    def read_from_volume(self) -> None:
         _ = self.volume.seek(self.offset)
         data = self.volume.read(sizeof(self))
         if len(data) != sizeof(self):
@@ -102,11 +102,11 @@ class Ext4Struct(LittleEndianStructure):
         _ = memmove(addressof(self), data, sizeof(self))
 
     @property
-    def size(self):
+    def size(self) -> int:
         return sizeof(self)
 
     @property
-    def magic(self):
+    def magic(self) -> None:
         return None
 
     @property
@@ -114,18 +114,18 @@ class Ext4Struct(LittleEndianStructure):
         return None
 
     @property
-    def checksum(self):
+    def checksum(self) -> None:
         return None
 
     @property
-    def expected_checksum(self):
+    def expected_checksum(self) -> None:
         return None
 
     @property
-    def ignore_magic(self):
+    def ignore_magic(self) -> bool:
         return self.volume.ignore_magic
 
-    def verify(self):
+    def verify(self) -> None:
         """
         Verify magic numbers
         """
@@ -142,7 +142,7 @@ class Ext4Struct(LittleEndianStructure):
 
         warnings.warn(message, RuntimeWarning)
 
-    def validate(self):
+    def validate(self) -> None:
         """
         Validate data checksums
         """

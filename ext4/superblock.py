@@ -137,7 +137,7 @@ class Superblock(Ext4Struct):
         ("s_checksum", c_uint32),
     ]
 
-    def __init__(self, volume: "Volume", _=None):
+    def __init__(self, volume: "Volume", _=None) -> None:
         super().__init__(volume, 0x400)
 
     @property

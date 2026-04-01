@@ -18,7 +18,7 @@ from typing import (
 
 from ._compat import (
     assert_cast,
-    override,  # pyright: ignore[reportAttributeAccessIssue]
+    override,
 )
 from .enum import DX_HASH
 from .struct import (
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
 
 class LittleEndianStructureWithVolume(LittleEndianStructure):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._volume: Volume | None = None
 
@@ -89,12 +89,12 @@ class DXRootInfo(LittleEndianStructure):
 
 
 class DXBase(Ext4Struct):
-    def __init__(self, directory: "Directory", offset: int):
+    def __init__(self, directory: "Directory", offset: int) -> None:
         self.directory: Directory = directory
         super().__init__(directory.volume, offset)
 
     @override
-    def read_from_volume(self):
+    def read_from_volume(self) -> None:
         reader = self.directory._open()  # pyright: ignore[reportPrivateUsage]
         _ = reader.seek(self.offset)
         data = reader.read(sizeof(self))
@@ -110,7 +110,7 @@ class DXEntry(DXBase):
         ("block", c_uint32),
     ]
 
-    def __init__(self, parent: "DXEntriesBase", index: int):
+    def __init__(self, parent: "DXEntriesBase", index: int) -> None:
         self.index: int = index
         self.parent: DXEntriesBase = parent
         super().__init__(
@@ -121,7 +121,7 @@ class DXEntry(DXBase):
 
 class DXEntriesBase(DXBase):
     @override
-    def read_from_volume(self):
+    def read_from_volume(self) -> None:
         super().read_from_volume()
 
     @property
@@ -154,7 +154,7 @@ class DXRoot(DXEntriesBase):
         # ("entries", DXEntry * self.count),
     ]
 
-    def __init__(self, inode: "Directory"):
+    def __init__(self, inode: "Directory") -> None:
         super().__init__(inode, 0)
 
 
@@ -168,7 +168,7 @@ class DXFake(LittleEndianStructure):
     ]
 
     @property
-    def expected_magic(self):
+    def expected_magic(self) -> int:
         return 0
 
     @property
@@ -191,7 +191,7 @@ class DXNode(DXEntriesBase):
         # ("entries", DXEntry * self.count),
     ]
 
-    def __init__(self, directory: "Directory", offset: int):
+    def __init__(self, directory: "Directory", offset: int) -> None:
         super().__init__(directory, offset)
 
 
@@ -204,7 +204,7 @@ class DXTail(DXBase):
         ("dt_checksum", c_uint16),
     ]
 
-    def __init__(self, parent: DXNode):
+    def __init__(self, parent: DXNode) -> None:
         self.parent = parent
         count = assert_cast(parent.count, int)  # pyright: ignore[reportAny]
         super().__init__(

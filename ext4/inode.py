@@ -28,7 +28,7 @@ from cachetools import (
 from ._compat import (
     ReadableStream,
     assert_cast,
-    override,  # pyright: ignore[reportAttributeAccessIssue]
+    override,
 )
 from .block import BlockIO
 from .directory import (
@@ -56,6 +56,7 @@ from .struct import (
     MagicError,
     crc32c,
 )
+from .superblock import Superblock
 from .xattr import (
     ExtendedAttributeHeader,
     ExtendedAttributeIBodyHeader,
@@ -190,7 +191,7 @@ class Inode(Ext4Struct):
         ("i_projid", c_uint32),
     ]
 
-    def __new__(cls, volume: Volume, offset: int, i_no: int):
+    def __new__(cls, volume: Volume, offset: int, i_no: int) -> Inode:
         if cls is not Inode:
             return super().__new__(cls)
 
@@ -225,7 +226,7 @@ class Inode(Ext4Struct):
 
         raise InodeError(f"Unknown file type 0x{file_type:X}")
 
-    def __init__(self, volume: Volume, offset: int, i_no: int):
+    def __init__(self, volume: Volume, offset: int, i_no: int) -> None:
         self.i_no: int = i_no
         super().__init__(volume, offset)
         self.tree: ExtentTree | None = ExtentTree(self)
@@ -241,11 +242,11 @@ class Inode(Ext4Struct):
         return self.volume.read(self.superblock.s_inode_size - size)  # pyright: ignore[reportAny]
 
     @property
-    def superblock(self):
+    def superblock(self) -> Superblock:
         return self.volume.superblock
 
     @property
-    def block_size(self):
+    def block_size(self) -> int:
         return self.volume.block_size
 
     @property
@@ -444,12 +445,12 @@ class File(Inode):
 
 
 class SymbolicLink(Inode):
-    def readlink(self):
+    def readlink(self) -> bytes:
         return self._open().read()
 
 
 class Directory(Inode):
-    def __init__(self, volume: Volume, offset: int, i_no: int):
+    def __init__(self, volume: Volume, offset: int, i_no: int) -> None:
         super().__init__(volume, offset, i_no)
         self._inode_at_cache: LRUCache[str | bytes, Inode] = LRUCache(maxsize=32)
         self._dirents: None | list[DirectoryEntry | DirectoryEntry2] = None
@@ -458,12 +459,12 @@ class Directory(Inode):
             self.htree = DXRoot(self)
 
     @override
-    def verify(self):
+    def verify(self) -> None:
         super().verify()
         # TODO verify DirectoryEntryHash? Or should this be in validate?
 
     @override
-    def validate(self):
+    def validate(self) -> None:
         super().validate()
         # TODO validate each directory entry block with DirectoryEntryTail
 

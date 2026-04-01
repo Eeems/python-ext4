@@ -14,7 +14,7 @@ from typing import (
 
 from ._compat import (
     assert_cast,
-    override,  # pyright: ignore[reportAttributeAccessIssue]
+    override,
 )
 from .enum import EXT4_FT
 from .struct import Ext4Struct
@@ -29,12 +29,12 @@ EXT4_MAX_REC_LEN = (1 << 16) - 1
 
 
 class DirectoryEntryStruct(Ext4Struct):
-    def __init__(self, directory: "Directory", offset: int):
+    def __init__(self, directory: "Directory", offset: int) -> None:
         self.directory: Directory = directory
         super().__init__(directory.volume, offset)
 
     @override
-    def read_from_volume(self):
+    def read_from_volume(self) -> None:
         data = self.directory._open().read()[self.offset : self.offset + self.size]  # pyright: ignore[reportPrivateUsage]
         _ = memmove(addressof(self), data, self.size)
 

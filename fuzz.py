@@ -177,6 +177,7 @@ class FuzzableStream(PeekableStream):
 
         return self._view[offset:end].tobytes()
 
+    @override
     def seek(self, offset: int, mode: int | None = None) -> int:
         if mode is None:
             mode = os.SEEK_SET
@@ -192,6 +193,7 @@ class FuzzableStream(PeekableStream):
 
         return self._cursor
 
+    @override
     def tell(self) -> int:
         return self._cursor
 

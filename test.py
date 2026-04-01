@@ -15,8 +15,8 @@ import ext4
 FAILED = False
 
 
-def test_path_tuple(path: str | bytes, expected: tuple[bytes, ...]):
-    global FAILED
+def test_path_tuple(path: str | bytes, expected: tuple[bytes, ...]) -> None:
+    global FAILED  # noqa: PLW0603
     print(f"check Volume.path_tuple({path}): ", end="")
     try:
         t = ext4.Volume.path_tuple(path)
@@ -32,17 +32,17 @@ def test_path_tuple(path: str | bytes, expected: tuple[bytes, ...]):
         print(e)
 
 
-def _eval_or_False(source: str) -> Any:  # pyright: ignore[reportExplicitAny, reportAny]
+def _eval_or_False(source: str) -> Any:  # pyright: ignore[reportExplicitAny, reportAny]  # noqa: ANN401
     try:
-        return eval(source)  # pyright: ignore[reportAny]
+        return eval(source)  # pyright: ignore[reportAny]  # noqa: S307
 
     except Exception:
         traceback.print_exc()
         return False
 
 
-def _assert(source: str, debug: Callable[[], Any] | None = None):  # pyright: ignore[reportExplicitAny]
-    global FAILED
+def _assert(source: str, debug: Callable[[], Any] | None = None) -> None:  # pyright: ignore[reportExplicitAny]
+    global FAILED  # noqa: PLW0603
     print(f"check {source}: ", end="")
     if _eval_or_False(source):
         print("pass")
@@ -54,8 +54,8 @@ def _assert(source: str, debug: Callable[[], Any] | None = None):  # pyright: ig
         print(f"  {debug()}")
 
 
-def test_magic_error(f: BufferedReader):
-    global FAILED
+def test_magic_error(f: BufferedReader) -> None:
+    global FAILED  # noqa: PLW0603
     try:
         print("check MagicError: ", end="")
         _ = ext4.Volume(f, offset=0)
@@ -72,8 +72,8 @@ def test_magic_error(f: BufferedReader):
         print(e)
 
 
-def test_root_inode(volume: ext4.Volume):
-    global FAILED
+def test_root_inode(volume: ext4.Volume) -> None:
+    global FAILED  # noqa: PLW0603
     try:
         print("Validate root inode: ", end="")
         volume.root.validate()

@@ -1,4 +1,5 @@
 # pyright: reportImportCycles=false
+from collections.abc import Iterator
 from ctypes import (
     c_uint16,
     c_uint32,
@@ -21,7 +22,7 @@ if TYPE_CHECKING:
 
 
 class ExtentBlocks:
-    def __init__(self, extent: "Extent"):
+    def __init__(self, extent: "Extent") -> None:
         self.extent: Extent = extent
         self._null_block: bytearray = bytearray(self.block_size)
 
@@ -55,7 +56,7 @@ class ExtentBlocks:
     def __contains__(self, ee_block: int) -> bool:
         return self.ee_block <= ee_block < self.ee_block + self.ee_len
 
-    def __getitem__(self, ee_block: int):
+    def __getitem__(self, ee_block: int) -> bytearray | bytes:
         block_size = self.block_size
         if not self.is_initialized or ee_block not in self:
             # Uninitialized
@@ -65,10 +66,10 @@ class ExtentBlocks:
         _ = self.volume.seek(disk_block * block_size)
         return self.volume.read(block_size)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[int]:
         return iter(range(self.ee_block, self.ee_block + self.ee_len))
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.ee_len
 
 
@@ -84,7 +85,7 @@ class ExtentHeader(Ext4Struct):
         ("eh_generation", c_uint32),
     ]
 
-    def __init__(self, tree: "ExtentTree", offset: int):
+    def __init__(self, tree: "ExtentTree", offset: int) -> None:
         self.tree: ExtentTree = tree
         super().__init__(self.inode.volume, offset)
 
@@ -117,7 +118,7 @@ class ExtentHeader(Ext4Struct):
         return self.tree.inode
 
     @Ext4Struct.expected_magic.getter
-    def expected_magic(self):
+    def expected_magic(self) -> int:
         return 0xF30A
 
     @Ext4Struct.magic.getter
@@ -137,7 +138,7 @@ class ExtentHeader(Ext4Struct):
         return et_checksum
 
     @property
-    def seed(self):
+    def seed(self) -> int:
         return self.inode.seed
 
     @Ext4Struct.checksum.getter
@@ -162,7 +163,7 @@ class ExtentIndex(Ext4Struct):
         ("ei_unused", c_uint16),
     ]
 
-    def __init__(self, header: ExtentHeader, offset: int, ei_no: int):
+    def __init__(self, header: ExtentHeader, offset: int, ei_no: int) -> None:
         self.ei_no: int = ei_no
         self.header: ExtentHeader = header
         super().__init__(self.inode.volume, offset)
@@ -174,11 +175,11 @@ class ExtentIndex(Ext4Struct):
         return ei_leaf_hi << 32 | ei_leaf_lo
 
     @property
-    def tree(self):
+    def tree(self) -> "ExtentTree":
         return self.header.tree
 
     @property
-    def inode(self):
+    def inode(self) -> "Inode":
         return self.tree.inode
 
 
@@ -193,7 +194,7 @@ class Extent(Ext4Struct):
         ("ee_start_lo", c_uint32),
     ]
 
-    def __init__(self, header: ExtentHeader, offset: int, ee_no: int):
+    def __init__(self, header: ExtentHeader, offset: int, ee_no: int) -> None:
         super().__init__(header.inode.volume, offset)
         self.ee_no: int = ee_no
         self.header: ExtentHeader = header
@@ -236,7 +237,7 @@ class ExtentTail(Ext4Struct):
         ("et_checksum", c_uint32),
     ]
 
-    def __init__(self, header: ExtentHeader, offset: int):
+    def __init__(self, header: ExtentHeader, offset: int) -> None:
         self.header: ExtentHeader = header
         super().__init__(self.inode.volume, offset)
 
@@ -250,7 +251,7 @@ class ExtentTail(Ext4Struct):
 
 
 class ExtentTree:
-    def __init__(self, inode: "Inode"):
+    def __init__(self, inode: "Inode") -> None:
         self.inode: Inode = inode
         self.headers: list[ExtentHeader] = []
         if not self.has_extents:
