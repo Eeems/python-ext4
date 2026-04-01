@@ -24,7 +24,25 @@ classifiers = [
     "Topic :: System :: Filesystems",
     "Topic :: Utilities",
 ]
-dynamic = ["dependencies", "readme"]
+dynamic = ["readme"]
+dependencies = [
+    "cachetools==6.0.0",
+    "crcmod==1.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    'wheel',
+    'build',
+    'ruff',
+    'basedpyright',
+]
+test = [
+    "pytest",
+]
+fuzz = [
+    "atheris",
+]
 
 [project.urls]
 Homepage = "https://github.com/Eeems/python-ext4"
@@ -43,3 +61,32 @@ readme = {file= ["README.md"], content-type = "text/markdown"}
 [build-system]
 requires = ["setuptools >= 61.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+exclude = [".venv", "build"]
+
+[tool.ruff.lint]
+extend-select = [
+    "UP",
+    "PL",
+    "ANN",
+    "S",
+]
+ignore = [
+    "PLW0603",
+    "PLR2004",
+    "PLR0915",
+    "PLR0912",
+    "PLR0911",
+    "S101",
+    "S404",
+    "S603",
+    "S607",
+    "ANN401",
+    "ANN001",
+    "ANN003",
+]
+
+[tool.pyright]
+exclude = [".venv", "build"]
+reportMissingTypeStubs = false

@@ -1,30 +1,35 @@
 from __future__ import annotations
 
+import errno
 import io
 import os
-import errno
-
-from uuid import UUID
 from pathlib import PurePosixPath
+from uuid import UUID
 
-from cachetools import cachedmethod
-from cachetools import LRUCache
+from cachetools import (
+    LRUCache,
+    cachedmethod,
+)
 
-from ._compat import PeekableStream
-from ._compat import assert_cast
-from .enum import EXT4_INO
-from .superblock import Superblock
-from .inode import Inode
-from .inode import Directory
+from ._compat import (
+    PeekableStream,
+    assert_cast,
+)
 from .blockdescriptor import BlockDescriptor
+from .enum import EXT4_INO
+from .inode import (
+    Directory,
+    Inode,
+)
+from .superblock import Superblock
 
 
 class InvalidStreamException(Exception):
     pass
 
 
-class Inodes(object):
-    def __init__(self, volume: "Volume"):
+class Inodes:
+    def __init__(self, volume: Volume):
         self.volume: Volume = volume
         self._group_cache: dict[int, tuple[int, int]] = {}
         self._offset_cache: LRUCache[int, int] = LRUCache(maxsize=32)
@@ -60,7 +65,7 @@ class Inodes(object):
         return Inode(self.volume, offset, index)
 
 
-class Volume(object):
+class Volume:
     def __init__(
         self,
         stream: PeekableStream,

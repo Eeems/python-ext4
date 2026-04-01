@@ -3,12 +3,14 @@ from __future__ import annotations
 import os
 import sys
 import traceback
-import ext4
-
+from collections.abc import Callable
 from io import BufferedReader
-from typing import cast
-from typing import Callable
-from typing import Any
+from typing import (
+    Any,
+    cast,
+)
+
+import ext4
 
 FAILED = False
 

@@ -1,15 +1,21 @@
 # pyright: reportImportCycles=false
-import warnings
 import ctypes
+import warnings
+from collections.abc import Callable
+from ctypes import (
+    LittleEndianStructure,
+    addressof,
+    memmove,
+    sizeof,
+)
+from typing import (
+    TYPE_CHECKING,
+    cast,
+)
 
-from ctypes import LittleEndianStructure
-from ctypes import memmove
-from ctypes import addressof
-from ctypes import sizeof
-from crcmod import mkCrcFun  # pyright: ignore[reportMissingTypeStubs, reportUnknownVariableType]
-from typing import cast
-from typing import Callable
-from typing import TYPE_CHECKING
+from crcmod import (
+    mkCrcFun,  # pyright: ignore[reportMissingTypeStubs, reportUnknownVariableType]
+)
 
 if TYPE_CHECKING:
     from .volume import Volume
@@ -70,7 +76,7 @@ def to_hex(data: int | list[int] | bytes | None) -> str:
 class Ext4Struct(LittleEndianStructure):
     def __init__(self, volume: "Volume", offset: int):
         super().__init__()
-        self.volume: "Volume" = volume
+        self.volume: Volume = volume
         self.offset: int = offset
         self.read_from_volume()
         self.verify()

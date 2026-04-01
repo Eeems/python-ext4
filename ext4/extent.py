@@ -1,24 +1,28 @@
 # pyright: reportImportCycles=false
-from ctypes import c_uint32
-from ctypes import c_uint16
-from ctypes import sizeof
-
-from typing import final
-from typing import TYPE_CHECKING
-
-from .struct import crc32c
-from .struct import Ext4Struct
+from ctypes import (
+    c_uint16,
+    c_uint32,
+    sizeof,
+)
+from typing import (
+    TYPE_CHECKING,
+    final,
+)
 
 from ._compat import assert_cast
+from .struct import (
+    Ext4Struct,
+    crc32c,
+)
 
 if TYPE_CHECKING:
     from .inode import Inode
     from .volume import Volume
 
 
-class ExtentBlocks(object):
+class ExtentBlocks:
     def __init__(self, extent: "Extent"):
-        self.extent: "Extent" = extent
+        self.extent: Extent = extent
         self._null_block: bytearray = bytearray(self.block_size)
 
     @property
@@ -245,9 +249,9 @@ class ExtentTail(Ext4Struct):
         return self.tree.inode
 
 
-class ExtentTree(object):
+class ExtentTree:
     def __init__(self, inode: "Inode"):
-        self.inode: "Inode" = inode
+        self.inode: Inode = inode
         self.headers: list[ExtentHeader] = []
         if not self.has_extents:
             return

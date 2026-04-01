@@ -1,17 +1,19 @@
 import os
-from typing import Protocol
-from typing import runtime_checkable
-from typing import TypeVar
-from typing import Any
+from typing import (
+    Any,
+    Protocol,
+    TypeVar,
+    runtime_checkable,
+)
 
 # Added in python 3.12
 try:
     from typing import override  # pyright: ignore[reportAssignmentType]
 
 except ImportError:
-    from typing import Callable
+    from collections.abc import Callable
 
-    def override(fn: Callable[..., Any]):  # pyright: ignore[reportExplicitAny]
+    def override(fn: Callable[..., Any]):  # pyright: ignore[reportExplicitAny]  # noqa: ANN202
         return fn
 
 

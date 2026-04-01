@@ -1,14 +1,19 @@
 # pyright: reportImportCycles=false
-from ctypes import c_uint32
-from ctypes import c_uint16
+from ctypes import (
+    c_uint16,
+    c_uint32,
+)
+from typing import (
+    TYPE_CHECKING,
+    final,
+)
 
-from typing import final
-from typing import TYPE_CHECKING
-
-from .enum import EXT4_BG
-from .struct import Ext4Struct
-from .struct import crc32c
 from ._compat import assert_cast
+from .enum import EXT4_BG
+from .struct import (
+    Ext4Struct,
+    crc32c,
+)
 
 if TYPE_CHECKING:
     from .volume import Volume

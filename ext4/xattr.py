@@ -1,22 +1,28 @@
 import warnings
-
-from ctypes import c_uint32
-from ctypes import c_uint16
-from ctypes import c_uint8
-from ctypes import sizeof
-
-from typing import final
-from typing import TYPE_CHECKING
-
 from collections.abc import Generator
+from ctypes import (
+    c_uint8,
+    c_uint16,
+    c_uint32,
+    sizeof,
+)
+from typing import (
+    TYPE_CHECKING,
+    final,
+)
 
-from .enum import EXT4_FL
-from .enum import EXT4_FEATURE_INCOMPAT
-
-from .struct import Ext4Struct
-from .struct import crc32c
-
-from ._compat import assert_cast, override
+from ._compat import (
+    assert_cast,
+    override,  # pyright: ignore[reportAttributeAccessIssue]
+)
+from .enum import (
+    EXT4_FEATURE_INCOMPAT,
+    EXT4_FL,
+)
+from .struct import (
+    Ext4Struct,
+    crc32c,
+)
 
 if TYPE_CHECKING:
     from .inode import Inode
@@ -28,7 +34,7 @@ class ExtendedAttributeError(Exception):
 
 class ExtendedAttributeBase(Ext4Struct):
     def __init__(self, inode: "Inode", offset: int, size: int):
-        self.inode: "Inode" = inode
+        self.inode: Inode = inode
         self.data_size: int = size
         super().__init__(inode.volume, offset)
 

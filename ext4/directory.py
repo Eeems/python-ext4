@@ -1,18 +1,23 @@
 # pyright: reportImportCycles=false
-from ctypes import c_uint32
-from ctypes import c_uint16
-from ctypes import c_uint8
-from ctypes import c_char
-from ctypes import memmove
-from ctypes import addressof
+from ctypes import (
+    addressof,
+    c_char,
+    c_uint8,
+    c_uint16,
+    c_uint32,
+    memmove,
+)
+from typing import (
+    TYPE_CHECKING,
+    final,
+)
 
-from typing import final
-from typing import TYPE_CHECKING
-
-from .struct import Ext4Struct
+from ._compat import (
+    assert_cast,
+    override,  # pyright: ignore[reportAttributeAccessIssue]
+)
 from .enum import EXT4_FT
-from ._compat import override
-from ._compat import assert_cast
+from .struct import Ext4Struct
 
 if TYPE_CHECKING:
     from .inode import Directory
@@ -25,7 +30,7 @@ EXT4_MAX_REC_LEN = (1 << 16) - 1
 
 class DirectoryEntryStruct(Ext4Struct):
     def __init__(self, directory: "Directory", offset: int):
-        self.directory: "Directory" = directory
+        self.directory: Directory = directory
         super().__init__(directory.volume, offset)
 
     @override

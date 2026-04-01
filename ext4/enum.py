@@ -1,14 +1,17 @@
 # pyright: reportImportCycles=false
-from ctypes import c_uint8
-from ctypes import c_uint16
-from ctypes import c_uint32
+from ctypes import (
+    c_uint8,
+    c_uint16,
+    c_uint32,
+)
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    cast,
+    final,
+)
 
-from typing import cast
-from typing import Any
-from typing import final
-from typing import TYPE_CHECKING
-
-from ._compat import override
+from ._compat import override  # pyright: ignore[reportAttributeAccessIssue]
 
 if TYPE_CHECKING:
     from .struct import SimpleCData

@@ -1,25 +1,30 @@
 # pyright: reportImportCycles=false
 import warnings
-
-from ctypes import c_uint32
-from ctypes import c_uint16
-from ctypes import c_uint8
-from ctypes import c_char
-from ctypes import sizeof
-from ctypes import addressof
-from ctypes import memmove
-from ctypes import LittleEndianStructure
-
-from typing import final
-from typing import TYPE_CHECKING
-
 from collections.abc import Generator
+from ctypes import (
+    LittleEndianStructure,
+    addressof,
+    c_char,
+    c_uint8,
+    c_uint16,
+    c_uint32,
+    memmove,
+    sizeof,
+)
+from typing import (
+    TYPE_CHECKING,
+    final,
+)
 
-from .struct import Ext4Struct
-from .struct import MagicError
+from ._compat import (
+    assert_cast,
+    override,  # pyright: ignore[reportAttributeAccessIssue]
+)
 from .enum import DX_HASH
-from ._compat import override
-from ._compat import assert_cast
+from .struct import (
+    Ext4Struct,
+    MagicError,
+)
 
 if TYPE_CHECKING:
     from .inode import Directory
@@ -29,7 +34,7 @@ if TYPE_CHECKING:
 class LittleEndianStructureWithVolume(LittleEndianStructure):
     def __init__(self):
         super().__init__()
-        self._volume: "Volume | None" = None
+        self._volume: Volume | None = None
 
     @property
     def volume(self) -> "Volume":
@@ -85,7 +90,7 @@ class DXRootInfo(LittleEndianStructure):
 
 class DXBase(Ext4Struct):
     def __init__(self, directory: "Directory", offset: int):
-        self.directory: "Directory" = directory
+        self.directory: Directory = directory
         super().__init__(directory.volume, offset)
 
     @override

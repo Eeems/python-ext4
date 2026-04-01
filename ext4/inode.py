@@ -1,57 +1,65 @@
 # pyright: reportImportCycles=false
 from __future__ import annotations
 
+import errno
 import io
 import os
-import errno
 import warnings
-
-from ctypes import LittleEndianStructure
-from ctypes import Union
-from ctypes import c_uint32
-from ctypes import c_uint16
-from ctypes import sizeof
-
-from typing import cast
-from typing import final
-from typing import Any
-from typing import TYPE_CHECKING
-
-from cachetools import cachedmethod
-from cachetools import LRUCache
-
-from ._compat import override
-from ._compat import ReadableStream
-from ._compat import assert_cast
-
 from collections.abc import Generator
+from ctypes import (
+    LittleEndianStructure,
+    Union,
+    c_uint16,
+    c_uint32,
+    sizeof,
+)
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    cast,
+    final,
+)
 
-from .struct import crc32c
-from .struct import Ext4Struct
-from .struct import MagicError
+from cachetools import (
+    LRUCache,
+    cachedmethod,
+)
 
-from .enum import EXT4_OS
-from .enum import EXT4_FL
-from .enum import EXT4_FEATURE_INCOMPAT
-from .enum import MODE
-from .enum import EXT4_FT
-
-from .extent import Extent
-from .extent import ExtentHeader
-from .extent import ExtentIndex
-from .extent import ExtentTree
-
+from ._compat import (
+    ReadableStream,
+    assert_cast,
+    override,  # pyright: ignore[reportAttributeAccessIssue]
+)
 from .block import BlockIO
-
-from .directory import DirectoryEntry
-from .directory import DirectoryEntry2
-from .directory import DirectoryEntryHash
-from .directory import EXT4_DIR_ROUND
-
+from .directory import (
+    EXT4_DIR_ROUND,
+    DirectoryEntry,
+    DirectoryEntry2,
+    DirectoryEntryHash,
+)
+from .enum import (
+    EXT4_FEATURE_INCOMPAT,
+    EXT4_FL,
+    EXT4_FT,
+    EXT4_OS,
+    MODE,
+)
+from .extent import (
+    Extent,
+    ExtentHeader,
+    ExtentIndex,
+    ExtentTree,
+)
 from .htree import DXRoot
-
-from .xattr import ExtendedAttributeIBodyHeader
-from .xattr import ExtendedAttributeHeader
+from .struct import (
+    Ext4Struct,
+    MagicError,
+    crc32c,
+)
+from .xattr import (
+    ExtendedAttributeHeader,
+    ExtendedAttributeIBodyHeader,
+)
 
 if TYPE_CHECKING:
     from .volume import Volume
@@ -182,7 +190,7 @@ class Inode(Ext4Struct):
         ("i_projid", c_uint32),
     ]
 
-    def __new__(cls, volume: "Volume", offset: int, i_no: int):
+    def __new__(cls, volume: Volume, offset: int, i_no: int):
         if cls is not Inode:
             return super().__new__(cls)
 
@@ -217,7 +225,7 @@ class Inode(Ext4Struct):
 
         raise InodeError(f"Unknown file type 0x{file_type:X}")
 
-    def __init__(self, volume: "Volume", offset: int, i_no: int):
+    def __init__(self, volume: Volume, offset: int, i_no: int):
         self.i_no: int = i_no
         super().__init__(volume, offset)
         self.tree: ExtentTree | None = ExtentTree(self)
@@ -441,7 +449,7 @@ class SymbolicLink(Inode):
 
 
 class Directory(Inode):
-    def __init__(self, volume: "Volume", offset: int, i_no: int):
+    def __init__(self, volume: Volume, offset: int, i_no: int):
         super().__init__(volume, offset, i_no)
         self._inode_at_cache: LRUCache[str | bytes, Inode] = LRUCache(maxsize=32)
         self._dirents: None | list[DirectoryEntry | DirectoryEntry2] = None

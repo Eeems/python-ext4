@@ -1,16 +1,15 @@
 # pyright: reportImportCycles=false
-import io
 import errno
-
-from ._compat import override
-
+import io
 from typing import TYPE_CHECKING
+
+from ._compat import override  # pyright: ignore[reportAttributeAccessIssue]
 
 if TYPE_CHECKING:
     from .inode import Inode
 
 
-class BlockIOBlocks(object):
+class BlockIOBlocks:
     def __init__(self, blockio: "BlockIO"):
         self.blockio: BlockIO = blockio
         self._null_block: bytearray = bytearray(self.block_size)
@@ -43,7 +42,7 @@ class BlockIOBlocks(object):
 class BlockIO(io.RawIOBase):
     def __init__(self, inode: "Inode"):
         super().__init__()
-        self.inode: "Inode" = inode
+        self.inode: Inode = inode
         self.cursor: int = 0
         self.blocks: BlockIOBlocks = BlockIOBlocks(self)
 
