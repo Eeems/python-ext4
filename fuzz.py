@@ -13,6 +13,8 @@ if not os.path.exists(seed_file) or os.path.getsize(seed_file) != MIN_DATA_SIZE:
 
 with atheris.instrument_imports():  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
     from ext4 import (
+        EXT4_INO,
+        Directory,
         File,
         InodeError,
         SymbolicLink,
@@ -32,6 +34,24 @@ class FuzzableStream(PeekableStream):
         self._view: memoryview[bytearray] = memoryview(data)
         self._cursor: int = 0
 
+        # Decision bytes (contiguous)
+        self._enable_extents = data[0] & 0x80
+        self._enable_htree = data[1] & 0x80
+        self._num_groups = (data[2] % 8) + 1
+        self._log_block_size = data[3] % 4
+        self._feature_incompat = int.from_bytes(data[4:8], "little")
+        self._extent_depth = data[5] % 2
+        self._htree_complexity = data[6] % 2
+
+        # Content bytes for structures (contiguous after decisions)
+        self._extent_num_extents = (data[7] % 5) + 1
+        self._extent_block = int.from_bytes(data[8:12], "little") & 0xFFFF
+        self._htree_num_entries = (data[12] % 8) + 1
+        self._htree_hash_version = data[13] % 4
+
+        # Block group content (16 bytes, 2 groups worth)
+        self._bg_data = data[14:30]
+
     @override
     def read(self, size: int | None = None) -> bytes:
         result = self.peek(size)
@@ -47,6 +67,7 @@ class FuzzableStream(PeekableStream):
         end = offset + size
 
         sb_start = self.SUPERBLOCK_OFFSET
+        block_size = 1024 << self._log_block_size  # 1K, 2K, 4K, or 8K
         sb_end = sb_start + 256  # Superblock is 256 bytes
         if offset < sb_end and end >= sb_start:
             # Build superblock data from scratch
@@ -68,7 +89,7 @@ class FuzzableStream(PeekableStream):
             result[0x14:0x18] = b"\x01\x00\x00\x00"
 
             # s_log_block_size at offset 0x18
-            result[0x18:0x1C] = b"\x00\x00\x00\x00"
+            result[0x18:0x1C] = self._log_block_size.to_bytes(4, "little")
 
             # s_blocks_per_group at offset 0x20
             result[0x20:0x24] = b"\x08\x00\x00\x00"
@@ -89,7 +110,7 @@ class FuzzableStream(PeekableStream):
             result[0x64:0x68] = b"\x00\x00\x00\x00"
 
             # s_feature_incompat at offset 0x68
-            result[0x68:0x6C] = b"\x40\x00\x00\x00"  # IS64BIT
+            result[0x68:0x6C] = self._feature_incompat.to_bytes(4, "little")
 
             # s_feature_ro_compat at offset 0x6C
             result[0x6C:0x70] = b"\x00\x00\x00\x00"
@@ -110,76 +131,214 @@ class FuzzableStream(PeekableStream):
 
             return bytes(result)
 
-        # Check if reading block group descriptor table (at block 3, offset 3072)
-        bgdt_start = 3072  # Block 3 * 1K block size
+        # Check if reading block group descriptor table
+        bgdt_start = block_size * 3  # Block 3
         bgdt_size = 32  # 32 bytes per block descriptor
-        bgdt_end = bgdt_start + bgdt_size
+        bgdt_end = bgdt_start + (bgdt_size * self._num_groups)
 
         if offset < bgdt_end and end >= bgdt_start:
-            # Generate valid block descriptor
-            result = bytearray(bgdt_size)
-            # bg_inode_table_lo at offset 8
-            # Set to block 2 = 2
-            result[8:12] = (2).to_bytes(4, "little")
-            return bytes(result)
+            # Generate block descriptors based on data bytes
+            result = bytearray(bgdt_size * self._num_groups)
+            for i in range(self._num_groups):
+                base = i * bgdt_size
+                bb_offset = 2 + (i * 2)
+                ib_offset = 4 + (i * 2)
+                result[base + 0 : base + 2] = bytes(
+                    [self._bg_data[bb_offset % 16], self._bg_data[(bb_offset + 1) % 16]]
+                )
+                result[base + 4 : base + 6] = bytes(
+                    [self._bg_data[ib_offset % 16], self._bg_data[(ib_offset + 1) % 16]]
+                )
+                result[base + 8 : base + 12] = (2 + i * 4).to_bytes(4, "little")
+
+            start = max(0, offset - bgdt_start)
+            end_pos = min(bgdt_end, end)
+            return bytes(result[start : end_pos - bgdt_start])
 
         # Check if reading inode table (at block 2, offset 2048 for 1K blocks)
-        inode_table_start = 2048  # Block 2 * 1K block size
+        inode_table_start = block_size * 2  # Block 2
         inode_size = 128
         num_inodes = 32
         inode_table_end = inode_table_start + (
             num_inodes * inode_size
         )  # 32 inodes * 128 bytes
 
-        # Only serve generated inode table for reads in the exact inode table region (2048-4096)
+        # Only serve generated inode table for reads in the exact inode table region
         if offset >= inode_table_start and offset < inode_table_end:
             # Create valid inode data for inodes 1-32
             result = bytearray(num_inodes * inode_size)
 
-            # Inode 1 - Regular file (IFREG = 0x8000)
-            result[0:2] = b"\x00\x80"
+            # Determine which inodes get special flags based on data bytes
+            extents_inodes = {1, 10} if self._enable_extents else set()
+            htree_inodes = {2, 9, 11} if self._enable_htree else set()
+            dir_inodes = {2, 9, 11}
 
-            # Root inode (inode 2) - set as directory (IFDIR = 0x4000)
-            result[128:130] = b"\x00\x40"  # IFDIR
-
-            # Inode 3 - Symbolic link (IFLNK = 0xA000)
-            result[256:258] = b"\x00\xa0"
-
-            # Inode 4 - Socket (IFSOCK = 0xC000)
-            result[384:386] = b"\x00\xc0"
-
-            # Boot loader inode (inode 5) - Block device (IFBLK = 0x6000)
-            result[512:514] = b"\x00\x60"  # IFBLK
-
-            # Bad blocks inode (inode 6) - Block device (IFBLK = 0x6000)
-            result[640:642] = b"\x00\x60"  # IFBLK
-
-            # Inode 7 - Character device (IFCHR = 0x2000)
-            result[768:770] = b"\x00\x20"
-
-            # Inode 8 - FIFO (IFIFO = 0x1000)
-            result[896:898] = b"\x00\x10"
-
-            # Inode 9 - Another directory
-            result[1024:1026] = b"\x00\x40"
-
-            # Inode 10 - Another file
-            result[1152:1154] = b"\x00\x80"
-
-            # Journal inode (inode 11) - set as directory (IFDIR = 0x4000)
-            result[1280:1282] = b"\x00\x40"
-
-            # Inode 12-32 - Mix of files and directories
-            for i in range(12, 33):
+            for i in range(1, num_inodes + 1):
                 inode_offset = (i - 1) * inode_size
-                file_type = 0x40 if i % 3 == 0 else 0x80  # Alternate IFDIR and IFREG
+                file_type = 0x40 if i in dir_inodes else 0x80
+                if i in htree_inodes:
+                    file_type = 0x40  # Directory
+
                 result[inode_offset : inode_offset + 2] = file_type.to_bytes(
                     2, "little"
                 )
 
+                # Set i_flags for EXTENTS and INDEX
+                flags = 0
+                if i in extents_inodes:
+                    flags |= 0x80000  # EXTENTS
+                if i in htree_inodes:
+                    flags |= 0x1000  # INDEX
+
+                if flags:
+                    result[inode_offset + 0x14 : inode_offset + 0x18] = flags.to_bytes(
+                        4, "little"
+                    )
+
+                # Generate extent tree in i_block[] for EXTENTS inodes
+                if i in extents_inodes:
+                    extent_offset = inode_offset + 0x28  # i_block offset
+
+                    if self._extent_depth == 0:
+                        # Depth 0: ExtentHeader + Extent entries
+                        eh_magic = 0xF30A
+                        result[extent_offset : extent_offset + 2] = eh_magic.to_bytes(
+                            2, "little"
+                        )
+                        result[extent_offset + 2 : extent_offset + 4] = (
+                            self._extent_num_extents.to_bytes(2, "little")
+                        )
+                        result[extent_offset + 4 : extent_offset + 6] = (
+                            self._extent_num_extents
+                        ).to_bytes(2, "little")
+                        result[extent_offset + 6 : extent_offset + 8] = (
+                            b"\x00\x00"  # eh_depth = 0
+                        )
+                        result[extent_offset + 8 : extent_offset + 12] = (
+                            b"\x00\x00\x00\x00"
+                        )
+
+                        # Extent entries (ee_block, ee_len, ee_start_hi, ee_start_lo)
+                        for j in range(self._extent_num_extents):
+                            ee_offset = extent_offset + 12 + (j * 12)
+                            block_num = (self._extent_block + j) & 0xFFFF
+                            result[ee_offset : ee_offset + 4] = (
+                                j * block_size
+                            ).to_bytes(4, "little")
+                            result[ee_offset + 4 : ee_offset + 6] = (
+                                b"\x01\x00"  # ee_len = 1
+                            )
+                            result[ee_offset + 6 : ee_offset + 8] = b"\x00\x00"
+                            result[ee_offset + 8 : ee_offset + 12] = block_num.to_bytes(
+                                4, "little"
+                            )
+                    else:
+                        # Depth 1: ExtentHeader with index + ExtentIndex entries
+                        result[extent_offset : extent_offset + 2] = (
+                            b"\x0a\xf3"  # eh_magic
+                        )
+                        result[extent_offset + 2 : extent_offset + 4] = (
+                            b"\x01\x00"  # eh_entries = 1
+                        )
+                        result[extent_offset + 4 : extent_offset + 6] = (
+                            b"\x01\x00"  # eh_max = 1
+                        )
+                        result[extent_offset + 6 : extent_offset + 8] = (
+                            b"\x01\x00"  # eh_depth = 1
+                        )
+                        result[extent_offset + 8 : extent_offset + 12] = (
+                            b"\x00\x00\x00\x00"
+                        )
+
+                        # ExtentIndex entry pointing to leaf block
+                        ei_offset = extent_offset + 12
+                        result[ei_offset : ei_offset + 4] = (
+                            b"\x00\x00\x00\x00"  # ei_block = 0
+                        )
+                        leaf_block = (self._extent_block & 0xFF) + 10
+                        result[ei_offset + 4 : ei_offset + 8] = leaf_block.to_bytes(
+                            4, "little"
+                        )
+                        result[ei_offset + 8 : ei_offset + 10] = b"\x00\x00"
+                        result[ei_offset + 10 : ei_offset + 12] = b"\x00\x00"
+
+                # For htree directories, set i_block[0] to point to htree data block
+                if i in htree_inodes:
+                    htree_block = 20 + i
+                    result[inode_offset + 0x28 : inode_offset + 0x2C] = (
+                        htree_block.to_bytes(4, "little")
+                    )
+
             # Extract the portion requested relative to inode table start
             start = offset - inode_table_start
             return bytes(result[start : start + size])
+
+        # Check for htree data blocks (block 20+ based on inode)
+        htree_start = block_size * 20
+        htree_end = htree_start + (block_size * 4)
+        if offset < htree_end and end >= htree_start and self._enable_htree:
+            block_idx = (offset - htree_start) // block_size
+            if block_idx < 4:
+                result = bytearray(block_size)
+                if block_idx == 0:
+                    result[0:4] = b"\x01\x00\x00\x00"  # inode: 1 (.)
+                    result[4:6] = b"\x10\x00"  # rec_len: 16
+                    result[6:7] = b"\x01"  # name_len: 1
+                    result[7:8] = bytes([0x02])  # file_type: DIR
+                    result[8:12] = b".\x00\x00\x00"
+                    result[12:16] = b"\x02\x00\x00\x00"  # inode: 2 (..)
+                    result[16:18] = b"\x10\x00"  # rec_len: 16
+                    result[18:19] = b"\x02"  # name_len: 2
+                    result[19:20] = bytes([0x02])  # file_type: DIR
+                    result[20:24] = b"..\x00\x00"
+                    result[24:28] = b"\x00\x00\x00\x00"  # dx_root_info.reserved_zero
+                    result[28:29] = bytes([self._htree_hash_version])  # hash_version
+                    result[29:30] = b"\x08"  # info_length: 8
+                    result[30:31] = bytes([self._htree_complexity])  # indirect_levels
+                    result[31:32] = b"\x00"  # unused_flags
+                    result[32:34] = (12 + self._htree_num_entries * 8).to_bytes(
+                        2, "little"
+                    )  # limit
+                    result[34:36] = self._htree_num_entries.to_bytes(
+                        2, "little"
+                    )  # count
+                    result[36:40] = b"\x00\x00\x00\x00"  # block
+
+                    dx_entry_offset = 40
+                    for j in range(self._htree_num_entries):
+                        hash_val = (j * 0x1234567) & 0xFFFFFFFF
+                        result[dx_entry_offset : dx_entry_offset + 4] = (
+                            hash_val.to_bytes(4, "little")
+                        )
+                        result[dx_entry_offset + 4 : dx_entry_offset + 8] = (
+                            20 + j
+                        ).to_bytes(4, "little")
+                        dx_entry_offset += 8
+
+                start = (offset - htree_start) % block_size
+                end_pos = min(block_size, start + size)
+                return bytes(result[start:end_pos])
+
+        # Check for extent leaf blocks (block 10+)
+        extent_leaf_start = block_size * 10
+        extent_leaf_end = extent_leaf_start + (block_size * 4)
+        if (
+            offset < extent_leaf_end
+            and end >= extent_leaf_start
+            and self._enable_extents
+        ):
+            block_idx = (offset - extent_leaf_start) // block_size
+            if block_idx < self._extent_num_extents:
+                result = bytearray(block_size)
+                result[0:4] = (block_idx * block_size).to_bytes(4, "little")
+                result[4:6] = b"\x01\x00"
+                result[6:8] = b"\x00\x00"
+                result[8:12] = ((self._extent_block + block_idx) & 0xFFFF).to_bytes(
+                    4, "little"
+                )
+                start = (offset - extent_leaf_start) % block_size
+                end_pos = min(block_size, start + size)
+                return bytes(result[start:end_pos])
 
         return self._view[offset:end].tobytes()
 
@@ -217,6 +376,9 @@ def TestOneInput(data: bytes) -> None:
         ignore_magic=True,
         ignore_attr_name_index=True,
     )
+    if not isinstance(vol.inodes[EXT4_INO.ROOT], Directory):
+        return
+
     _ = vol.superblock
     for bd in vol.group_descriptors:
         _ = bd.bg_block_bitmap
@@ -226,6 +388,11 @@ def TestOneInput(data: bytes) -> None:
 
     except InodeError:
         return
+
+    htree = root.htree
+    if htree is not None:
+        for _ in htree.entries:
+            pass
 
     for dirent, _ in root.opendir():
         _ = dirent.name_bytes
