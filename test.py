@@ -127,6 +127,10 @@ for img_file in ("test32.ext4", "test64.ext4"):
             traceback.print_exc()
             continue
 
+        _assert("volume.superblock is not None")
+        _assert("volume.bad_blocks is not None")
+        _assert("volume.boot_loader is not None")
+        _assert("volume.journal is not None")
         test_root_inode(volume)
         _assert('volume.root.inode_at("test.txt") == volume.inode_at("/test.txt")')
         _assert('volume.root.inode_at("/test.txt") == volume.inode_at("/test.txt")')
@@ -170,6 +174,10 @@ with open(img_file, "rb") as f:
         traceback.print_exc()
 
     if volume is not None:
+        _assert("volume.superblock is not None")
+        _assert("volume.bad_blocks is not None")
+        _assert("volume.boot_loader is not None")
+        _assert("volume.journal is not None")
         test_root_inode(volume)
         _assert("volume.root.is_htree == True")
         _assert("volume.root.htree is not None")
