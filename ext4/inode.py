@@ -226,7 +226,7 @@ class Inode(Ext4Struct):
             case _:
                 return EXT4_FT.UNKNOWN  # pyright: ignore[reportReturnType]
 
-    def __new__(cls, volume: Volume, offset: int, i_no: int) -> Inode | None:
+    def __new__(cls, volume: Volume, offset: int, i_no: int) -> Inode:
         if cls is not Inode:
             return super().__new__(cls)
 
