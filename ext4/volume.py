@@ -60,7 +60,7 @@ class Inodes:
         return table_offset + table_entry_index * s_inode_size
 
     @cachedmethod(lambda self: self._getitem_cache)  # pyright: ignore[reportAny]
-    def __getitem__(self, index: int) -> Inode:
+    def __getitem__(self, index: int) -> Inode | None:
         offset = self.offset(index)
         return Inode(self.volume, offset, index)
 
@@ -121,7 +121,9 @@ class Volume:
 
     @property
     def bad_blocks(self) -> Inode:
-        return self.inodes[EXT4_INO.BAD]
+        inode = self.inodes[EXT4_INO.BAD]
+        assert inode is not None
+        return inode
 
     @property
     def root(self) -> Directory:
@@ -129,23 +131,33 @@ class Volume:
 
     @property
     def user_quota(self) -> Inode:
-        return self.inodes[EXT4_INO.USR_QUOTA]
+        inode = self.inodes[EXT4_INO.USR_QUOTA]
+        assert inode is not None
+        return inode
 
     @property
     def group_quota(self) -> Inode:
-        return self.inodes[EXT4_INO.GRP_QUOTA]
+        inode = self.inodes[EXT4_INO.GRP_QUOTA]
+        assert inode is not None
+        return inode
 
     @property
     def boot_loader(self) -> Inode:
-        return self.inodes[EXT4_INO.BOOT_LOADER]
+        inode = self.inodes[EXT4_INO.BOOT_LOADER]
+        assert inode is not None
+        return inode
 
     @property
     def undelete_directory(self) -> Inode:
-        return self.inodes[EXT4_INO.UNDEL_DIR]
+        inode = self.inodes[EXT4_INO.UNDEL_DIR]
+        assert inode is not None
+        return inode
 
     @property
     def journal(self) -> Inode:
-        return self.inodes[EXT4_INO.JOURNAL]
+        inode = self.inodes[EXT4_INO.JOURNAL]
+        assert inode is not None
+        return inode
 
     @property
     def has_hi(self) -> int:

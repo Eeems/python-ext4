@@ -191,40 +191,73 @@ class Inode(Ext4Struct):
         ("i_projid", c_uint32),
     ]
 
-    def __new__(cls, volume: Volume, offset: int, i_no: int) -> Inode:
-        if cls is not Inode:
-            return super().__new__(cls)
-
+    @classmethod
+    def get_file_type(cls, volume: Volume, offset: int) -> EXT4_FT:
         _ = volume.seek(offset + Inode.i_mode.offset)
-        file_type: MODE = cast(
+        file_type = cast(
             MODE,
             Inode.field_type("i_mode").from_buffer_copy(  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportOptionalMemberAccess]
                 volume.read(Inode.i_mode.size)
             )
             & 0xF000,
         )
-        if file_type == MODE.IFIFO:
-            return super().__new__(Fifo)  # pyright: ignore[reportArgumentType]
+        match file_type:
+            case MODE.IFIFO:
+                return EXT4_FT.FIFO  # pyright: ignore[reportReturnType]
 
-        if file_type == MODE.IFDIR:
-            return super().__new__(Directory)  # pyright: ignore[reportArgumentType]
+            case MODE.IFCHR:
+                return EXT4_FT.CHRDEV  # pyright: ignore[reportReturnType]
 
-        if file_type == MODE.IFREG:
-            return super().__new__(File)  # pyright: ignore[reportArgumentType]
+            case MODE.IFDIR:
+                return EXT4_FT.DIR  # pyright: ignore[reportReturnType]
 
-        if file_type == MODE.IFLNK:
-            return super().__new__(SymbolicLink)  # pyright: ignore[reportArgumentType]
+            case MODE.IFBLK:
+                return EXT4_FT.BLKDEV  # pyright: ignore[reportReturnType]
 
-        if file_type == MODE.IFCHR:
-            return super().__new__(CharacterDevice)  # pyright: ignore[reportArgumentType]
+            case MODE.IFREG:
+                return EXT4_FT.REG_FILE  # pyright: ignore[reportReturnType]
 
-        if file_type == MODE.IFBLK:
-            return super().__new__(BlockDevice)  # pyright: ignore[reportArgumentType]
+            case MODE.IFLNK:
+                return EXT4_FT.SYMLINK  # pyright: ignore[reportReturnType]
 
-        if file_type == MODE.IFSOCK:
-            return super().__new__(Socket)  # pyright: ignore[reportArgumentType]
+            case MODE.IFSOCK:
+                return EXT4_FT.SOCK  # pyright: ignore[reportReturnType]
 
-        raise InodeError(f"Unknown file type 0x{file_type:X}")
+            case _:
+                return EXT4_FT.UNKNOWN  # pyright: ignore[reportReturnType]
+
+    def __new__(cls, volume: Volume, offset: int, i_no: int) -> Inode | None:
+        if cls is not Inode:
+            return super().__new__(cls)
+
+        file_type = cls.get_file_type(volume, offset)
+        match file_type:
+            case EXT4_FT.FIFO:
+                return super().__new__(Fifo)  # pyright: ignore[reportArgumentType]
+
+            case EXT4_FT.DIR:
+                return super().__new__(Directory)  # pyright: ignore[reportArgumentType]
+
+            case EXT4_FT.REG_FILE:
+                return super().__new__(File)  # pyright: ignore[reportArgumentType]
+
+            case EXT4_FT.SYMLINK:
+                return super().__new__(SymbolicLink)  # pyright: ignore[reportArgumentType]
+
+            case EXT4_FT.CHRDEV:
+                return super().__new__(CharacterDevice)  # pyright: ignore[reportArgumentType]
+
+            case EXT4_FT.BLKDEV:
+                return super().__new__(BlockDevice)  # pyright: ignore[reportArgumentType]
+
+            case EXT4_FT.SOCK:
+                return super().__new__(Socket)  # pyright: ignore[reportArgumentType]
+
+            case EXT4_FT.UNKNOWN:
+                return super().__new__(UnknownInode)  # pyright: ignore[reportArgumentType]
+
+            case _:
+                raise InodeError(f"Unknown file type 0x{file_type:X}")
 
     def __init__(self, volume: Volume, offset: int, i_no: int) -> None:
         self.i_no: int = i_no
@@ -420,6 +453,10 @@ class Inode(Ext4Struct):
                     raise
 
 
+class UnknownInode(Inode):
+    pass
+
+
 class Fifo(Inode):
     pass
 
@@ -540,38 +577,13 @@ class Directory(Inode):
     def _get_file_type(self, dirent: DirectoryEntry | DirectoryEntry2) -> EXT4_FT:
         dirent_inode = assert_cast(dirent.inode, int)  # pyright: ignore[reportAny]
         offset = self.volume.inodes.offset(dirent_inode)
-        _ = self.volume.seek(offset + Inode.i_mode.offset)
-        file_type = cast(
-            MODE,
-            Inode.field_type("i_mode").from_buffer_copy(  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportOptionalMemberAccess]
-                self.volume.read(Inode.i_mode.size)
+        file_type = self.get_file_type(self.volume, offset)
+        if EXT4_FT.UNKNOWN >= file_type >= EXT4_FT.MAX:
+            raise OpenDirectoryError(
+                f"Unexpected file type {file_type} for inode {dirent_inode}"
             )
-            & 0xF000,
-        )
-        if file_type == MODE.IFIFO:
-            return EXT4_FT.FIFO  # pyright: ignore[reportReturnType]
 
-        if file_type == MODE.IFCHR:
-            return EXT4_FT.CHRDEV  # pyright: ignore[reportReturnType]
-
-        if file_type == MODE.IFDIR:
-            return EXT4_FT.DIR  # pyright: ignore[reportReturnType]
-
-        if file_type == MODE.IFBLK:
-            return EXT4_FT.BLKDEV  # pyright: ignore[reportReturnType]
-
-        if file_type == MODE.IFREG:
-            return EXT4_FT.REG_FILE  # pyright: ignore[reportReturnType]
-
-        if file_type == MODE.IFLNK:
-            return EXT4_FT.SYMLINK  # pyright: ignore[reportReturnType]
-
-        if file_type == MODE.IFSOCK:
-            return EXT4_FT.SOCK  # pyright: ignore[reportReturnType]
-
-        raise OpenDirectoryError(
-            f"Unexpected file type {file_type} for inode {dirent_inode}"
-        )
+        return file_type
 
     def opendir(
         self,

@@ -11,9 +11,9 @@ import atheris
 
 warnings.filterwarnings("ignore")
 
-MIN_DATA_SIZE = 4
+MIN_DATA_SIZE = 145
 
-seed_file = os.path.join("corpus", "seed", "seed0")
+seed_file = os.path.join("corpus", "seed", "seed.bin")
 if not os.path.exists(seed_file) or os.path.getsize(seed_file) != MIN_DATA_SIZE:
     os.makedirs(os.path.dirname(seed_file), exist_ok=True)
     with open(seed_file, "wb") as f:
@@ -64,7 +64,7 @@ def TestOneInput(data: bytes) -> None:
     with tempfile.TemporaryDirectory(prefix="ext4_fuzz_") as tmpdir:
         rootdir = os.path.join(tmpdir, "root")
         os.mkdir(rootdir)
-        dirs = [rootdir]
+        dirs: list[str] = [rootdir]
         for _ in range(num_dirs):
             parent = rng.choice(dirs)
             name = "".join(
@@ -75,7 +75,7 @@ def TestOneInput(data: bytes) -> None:
             os.mkdir(path)
             dirs.append(path)
 
-        files = []
+        files: list[str] = []
         for _ in range(num_files):
             parent = rng.choice(dirs)
             name = "".join(
@@ -160,6 +160,8 @@ def TestOneInput(data: bytes) -> None:
                     _ = dirent.name_bytes
 
                 for inode in vol.inodes:
+                    if inode is None:
+                        continue
                     _ = inode.extents
                     _ = inode.i_size
                     if isinstance(inode, File):
