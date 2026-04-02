@@ -161,7 +161,8 @@ cython_debug/
 
 *.ext4
 *.ext4.tmp
+corpus/seed/
 crash-*
 timeout-*
-corpus/seed/
 oom-*
+slow-unit-*

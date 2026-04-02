@@ -204,7 +204,7 @@ def TestOneInput(data: bytes) -> None:
                     _ = dirent.name_bytes
 
                 for inode in volume.inodes:
-                    if inode.i_no <= EXT4_INO.BAD:
+                    if inode.i_no < EXT4_INO.GOOD_OLD_FIRST or inode.i_mode == 0:  # pyright: ignore[reportAny]
                         continue
 
                     try:
@@ -218,7 +218,7 @@ def TestOneInput(data: bytes) -> None:
                     _ = inode.i_file_acl
                     if isinstance(inode, File):
                         reader = inode.open()
-                        while reader.read(1):
+                        while reader.read(1024 * 10 * 1024):
                             continue
 
                     elif isinstance(inode, SymbolicLink):
