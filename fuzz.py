@@ -19,7 +19,7 @@ warnings.filterwarnings("ignore")
 EXPECTED_DATA_SIZE = 145
 
 
-seed_file = os.path.join("corpus", "seed", "seed.bin")
+seed_file = os.path.join("corpus", "seed", "seed0")
 if not os.path.exists(seed_file) or os.stat(seed_file).st_size != EXPECTED_DATA_SIZE:
     os.makedirs(os.path.dirname(seed_file), exist_ok=True)
     with open(seed_file, "wb") as f:
