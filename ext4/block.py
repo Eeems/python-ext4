@@ -1,6 +1,7 @@
 # pyright: reportImportCycles=false
 import errno
 import io
+import os
 from typing import TYPE_CHECKING
 
 from ._compat import override
@@ -79,7 +80,7 @@ class BlockIO(io.RawIOBase):
             raise NotImplementedError()
 
         if offset < 0:
-            raise OSError(errno.EINVAL, "Invalid argument")
+            raise OSError(errno.EINVAL, os.strerror(errno.EINVAL))
 
         self.cursor = offset
         return offset

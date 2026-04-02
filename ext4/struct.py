@@ -1,5 +1,6 @@
 # pyright: reportImportCycles=false
 import ctypes
+import errno
 import warnings
 from collections.abc import Callable
 from ctypes import (
@@ -96,7 +97,8 @@ class Ext4Struct(LittleEndianStructure):
         data = self.volume.read(sizeof(self))
         if len(data) != sizeof(self):
             raise OSError(
-                f"Short read for {type(self).__name__} at offset {self.offset}"
+                errno.EIO,
+                f"Short read for {type(self).__name__} at offset {self.offset}",
             )
 
         _ = memmove(addressof(self), data, sizeof(self))

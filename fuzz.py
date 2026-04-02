@@ -394,7 +394,7 @@ def TestOneInput(data: bytes) -> None:  # noqa: PLR0912
         if e.errno == errno.EINVAL:
             return
 
-        if "Short read for" in str(e):
+        if e.errno == errno.EIO and "Short read for" in str(e):
             return
 
         raise
