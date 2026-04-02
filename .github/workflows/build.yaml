@@ -23,9 +23,9 @@ jobs:
           - "3.14"
     steps:
       - name: Checkout the Git repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
           cache: "pip"
@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the Git repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Install dependencies
         shell: bash
         run: |
@@ -48,7 +48,7 @@ jobs:
         run: |
           set -e
           ./_test_image.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: test.ext4
           path: |
@@ -77,14 +77,14 @@ jobs:
           - "3.14"
     steps:
       - name: Checkout the Git repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Download test.ext4
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: test.ext4
           path: .
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
           cache: "pip"
@@ -106,9 +106,9 @@ jobs:
           #- "3.14" # not supported by atheris yet
     steps:
       - name: Checkout the Git repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
           cache: "pip"
@@ -121,9 +121,9 @@ jobs:
     needs: [test, lint]
     steps:
       - name: Checkout the Git repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: "pip"
@@ -131,7 +131,7 @@ jobs:
         run: pip install build
       - name: Building package
         run: make release
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: pip
           path: dist/*
@@ -150,7 +150,7 @@ jobs:
     steps:
       - name: Download pip packages
         id: download
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: pip
       - name: Publish package distributions to PyPI
@@ -167,10 +167,10 @@ jobs:
       contents: write
     steps:
       - name: Checkout the Git repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Download executable
         id: download
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: pip
           path: dist
