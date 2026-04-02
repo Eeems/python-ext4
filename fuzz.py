@@ -67,7 +67,7 @@ with atheris.instrument_imports():  # pyright: ignore[reportUnknownMemberType, r
     )
 
 
-def mkfs(fdp: atheris.FuzzedDataProvider, imgdir: str) -> str:
+def mkfs(fdp: atheris.FuzzedDataProvider, imgdir: str) -> str:  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownParameterType]
     if TYPE_CHECKING:
         fdp.ConsumeIntInRange = cast(Callable[[int, int], int], fdp.ConsumeIntInRange)
         fdp.ConsumeInt = cast(Callable[[int], int], fdp.ConsumeInt)
