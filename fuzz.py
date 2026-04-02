@@ -27,7 +27,9 @@ if not os.path.exists(seed_file) or os.stat(seed_file).st_size != EXPECTED_DATA_
 
 with atheris.instrument_imports():  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
     from ext4 import (
+        ChecksumError,
         Directory,
+        ExtendedAttributeError,
         File,
         SymbolicLink,
         Volume,
@@ -164,8 +166,15 @@ def TestOneInput(data: bytes) -> None:
                     _ = dirent.name_bytes
 
                 for inode in volume.inodes:
-                    _ = inode.extents
+                    try:
+                        inode.validate()
+
+                    except ChecksumError:
+                        pass
+
+                    _ = inode.extra_inode_data
                     _ = inode.i_size
+                    _ = inode.i_file_acl
                     if isinstance(inode, File):
                         _ = inode.open().read()
 
@@ -176,12 +185,38 @@ def TestOneInput(data: bytes) -> None:
                         for _ in inode.opendir():
                             pass
 
-                    for _ in inode.xattrs:
+                        _ = inode.has_filetype
+                        _ = inode.is_htree
+                        _ = inode.is_casefolded
+                        _ = inode.is_encrypted
+                        _ = inode.hash_in_dirent
+                        _ = inode.inode_at("/")
+                        try:
+                            _ = inode.inode_at("/empty")
+
+                        except FileNotFoundError:
+                            pass
+
+                    for _, _ in inode.xattrs:
                         pass
+
+                    for extent in inode.extents:
+                        _ = extent.is_initialized
+                        _ = extent.len
+                        _ = extent.read()
+
+                    for index in inode.indices:
+                        _ = index.ei_leaf
 
                 _ = volume.bad_blocks
                 _ = volume.boot_loader
                 _ = volume.journal
+                _ = volume.inode_at("/")
+                try:
+                    _ = volume.inode_at("/empty")
+
+                except FileNotFoundError:
+                    pass
 
         finally:
             if os.path.exists(img_path):
