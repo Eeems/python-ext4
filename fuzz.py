@@ -5,6 +5,11 @@ import subprocess
 import sys
 import tempfile
 import warnings
+from collections.abc import Callable
+from typing import (
+    Any,
+    cast,
+)
 
 import atheris
 
@@ -19,7 +24,7 @@ if not os.path.exists(seed_file) or os.stat(seed_file).st_size != EXPECTED_DATA_
     with open(seed_file, "wb") as f:
         _ = f.write(b"\x00" * EXPECTED_DATA_SIZE)
 
-with atheris.instrument_imports():
+with atheris.instrument_imports():  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
     from ext4 import (
         Directory,
         File,
@@ -29,7 +34,11 @@ with atheris.instrument_imports():
 
 
 def TestOneInput(data: bytes) -> None:
-    fdp = atheris.FuzzedDataProvider(data)
+    fdp = atheris.FuzzedDataProvider(data)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
+
+    fdp.ConsumeIntInRange = cast(Callable[[int, int], int], fdp.ConsumeIntInRange)
+    fdp.ConsumeInt = cast(Callable[[int], int], fdp.ConsumeInt)
+    fdp.PickValueInList = cast(Callable[[list[Any]], int], fdp.PickValueInList)  # pyright: ignore[reportExplicitAny]
 
     img_size: int = fdp.ConsumeIntInRange(32, 64)
     block_size: int = [1024, 2048, 4096][fdp.ConsumeIntInRange(0, 2)]
