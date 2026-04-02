@@ -1,4 +1,3 @@
-# pyright: reportImportCycles=false
 from collections.abc import Iterator
 from ctypes import (
     c_uint16,

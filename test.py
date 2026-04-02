@@ -28,8 +28,8 @@ def test_path_tuple(path: str | bytes, expected: tuple[bytes, ...]) -> None:
     except Exception as e:
         FAILED = True  # pyright: ignore[reportConstantRedefinition]
         print("fail")
-        print("  ", end="")
-        print(e)
+        print("  ", end="", file=sys.stderr)
+        print(e, file=sys.stderr)
 
 
 def _eval_or_False(source: str) -> Any:  # pyright: ignore[reportExplicitAny, reportAny]  # noqa: ANN401
@@ -51,7 +51,7 @@ def _assert(source: str, debug: Callable[[], Any] | None = None) -> None:  # pyr
     FAILED = True  # pyright: ignore[reportConstantRedefinition]
     print("fail")
     if debug is not None:
-        print(f"  {debug()}")
+        print(f"  {debug()}", file=sys.stderr)
 
 
 def test_magic_error(f: BufferedReader) -> None:
@@ -68,8 +68,8 @@ def test_magic_error(f: BufferedReader) -> None:
     except Exception as e:
         FAILED = True  # pyright: ignore[reportConstantRedefinition]
         print("fail")
-        print("  ", end="")
-        print(e)
+        print("  ", end="", file=sys.stderr)
+        print(e, file=sys.stderr)
 
 
 def test_root_inode(volume: ext4.Volume) -> None:
@@ -82,8 +82,8 @@ def test_root_inode(volume: ext4.Volume) -> None:
     except ext4.struct.ChecksumError as e:
         FAILED = True  # pyright: ignore[reportConstantRedefinition]
         print("fail")
-        print("  ", end="")
-        print(e)
+        print("  ", end="", file=sys.stderr)
+        print(e, file=sys.stderr)
 
 
 print("check ext4.Volume stream validation: ", end="")
@@ -98,8 +98,8 @@ except ext4.InvalidStreamException:
 except Exception as e:
     FAILED = True  # pyright: ignore[reportConstantRedefinition]
     print("fail")
-    print("  ", end="")
-    print(e)
+    print("  ", end="", file=sys.stderr)
+    print(e, file=sys.stderr)
 
 test_path_tuple("/", tuple())
 test_path_tuple(b"/", tuple())
@@ -161,6 +161,10 @@ for img_file in ("test32.ext4", "test64.ext4"):
         for x in range(1, 15):
             _ = b.seek(0)
             _assert(f"b.read({x}) == {data[:x]}", lambda: b.seek(0) == 0 and b.read(x))
+
+        inode = cast(ext4.SymbolicLink, volume.inode_at("/symlink.txt"))
+        _assert("isinstance(inode, ext4.SymbolicLink)")
+        _assert('inode.readlink() == b"test.txt"', inode.readlink)
 
 img_file = "test_htree.ext4"
 print(f"Testing image: {img_file}")

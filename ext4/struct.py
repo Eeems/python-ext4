@@ -1,4 +1,3 @@
-# pyright: reportImportCycles=false
 import ctypes
 import errno
 import warnings

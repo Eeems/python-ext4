@@ -1,4 +1,3 @@
-# pyright: reportImportCycles=false
 import errno
 import io
 import os

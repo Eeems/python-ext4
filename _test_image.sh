@@ -28,6 +28,7 @@ trap "rm -r \"$tmp_dir\"" EXIT
 echo "[test] Using temporary directory: $tmp_dir"
 echo "[test] Generating files..."
 echo "hello world" >"$tmp_dir"/test.txt
+ln -s test.txt "$tmp_dir"/symlink.txt
 for i in {1..1000}; do
   echo "echo "hello world" >>'$tmp_dir/test.txt'"
 done | xargs -P "$(nproc)" -I {} bash -c '{}'
@@ -43,7 +44,7 @@ done | xargs -P "$(nproc)" -I {} bash -c '{}'
 mkimage test32 "$tmp_dir" 20 -O ^64bit
 mkimage test64 "$tmp_dir" 20 -O 64bit
 
-rm -f "$tmp_dir"/test*.txt
+rm -f "$tmp_dir"/test*.txt "$tmp_dir"/symlink.txt
 echo "[test] Generating files..."
 
 echo "[test] Making image test_htree..."
