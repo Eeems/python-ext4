@@ -73,6 +73,10 @@ class InodeError(Exception):
     pass
 
 
+class MalformedInodeError(Exception):
+    pass
+
+
 @final
 class Linux1(LittleEndianStructure):
     _pack_ = 1
@@ -489,6 +493,11 @@ class SymbolicLink(Inode):
     def readlink(self) -> bytes:
         if not self.is_fast_symlink:
             return self._open().read()
+
+        if self.i_size > Inode.i_block.size:
+            raise MalformedInodeError(
+                f"Fast symlink target too large: {self.i_size} > {Inode.i_block.size}"
+            )
 
         _ = self.volume.seek(self.offset + Inode.i_block.offset)
         return self.volume.read(self.i_size)
