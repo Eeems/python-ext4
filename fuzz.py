@@ -141,18 +141,18 @@ def TestOneInput(data: bytes) -> None:
 
         try:
             with open(img_path, "rb") as f:
-                vol = Volume(
+                volume = Volume(
                     f,
                     ignore_checksum=True,
                     ignore_flags=True,
                     ignore_magic=True,
                     ignore_attr_name_index=True,
                 )
-                _ = vol.superblock
-                for bd in vol.group_descriptors:
-                    _ = bd.bg_block_bitmap
+                _ = volume.superblock
+                for group_descriptor in volume.group_descriptors:
+                    _ = group_descriptor.bg_block_bitmap
 
-                root = vol.root
+                root = volume.root
                 htree = root.htree
                 if htree is not None:
                     for _ in htree.entries:
@@ -161,9 +161,7 @@ def TestOneInput(data: bytes) -> None:
                 for dirent, _ in root.opendir():
                     _ = dirent.name_bytes
 
-                for inode in vol.inodes:
-                    if inode is None:
-                        continue
+                for inode in volume.inodes:
                     _ = inode.extents
                     _ = inode.i_size
                     if isinstance(inode, File):
@@ -179,9 +177,9 @@ def TestOneInput(data: bytes) -> None:
                     while next(inode.xattrs, None) is not None:
                         pass
 
-                _ = vol.bad_blocks
-                _ = vol.boot_loader
-                _ = vol.journal
+                _ = volume.bad_blocks
+                _ = volume.boot_loader
+                _ = volume.journal
 
         finally:
             if os.path.exists(img_path):
