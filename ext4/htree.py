@@ -1,25 +1,30 @@
 # pyright: reportImportCycles=false
 import warnings
-
-from ctypes import c_uint32
-from ctypes import c_uint16
-from ctypes import c_uint8
-from ctypes import c_char
-from ctypes import sizeof
-from ctypes import addressof
-from ctypes import memmove
-from ctypes import LittleEndianStructure
-
-from typing import final
-from typing import TYPE_CHECKING
-
 from collections.abc import Generator
+from ctypes import (
+    LittleEndianStructure,
+    addressof,
+    c_char,
+    c_uint8,
+    c_uint16,
+    c_uint32,
+    memmove,
+    sizeof,
+)
+from typing import (
+    TYPE_CHECKING,
+    final,
+)
 
-from .struct import Ext4Struct
-from .struct import MagicError
+from ._compat import (
+    assert_cast,
+    override,
+)
 from .enum import DX_HASH
-from ._compat import override
-from ._compat import assert_cast
+from .struct import (
+    Ext4Struct,
+    MagicError,
+)
 
 if TYPE_CHECKING:
     from .inode import Directory
@@ -27,9 +32,9 @@ if TYPE_CHECKING:
 
 
 class LittleEndianStructureWithVolume(LittleEndianStructure):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self._volume: "Volume | None" = None
+        self._volume: Volume | None = None
 
     @property
     def volume(self) -> "Volume":
@@ -84,12 +89,12 @@ class DXRootInfo(LittleEndianStructure):
 
 
 class DXBase(Ext4Struct):
-    def __init__(self, directory: "Directory", offset: int):
-        self.directory: "Directory" = directory
+    def __init__(self, directory: "Directory", offset: int) -> None:
+        self.directory: Directory = directory
         super().__init__(directory.volume, offset)
 
     @override
-    def read_from_volume(self):
+    def read_from_volume(self) -> None:
         reader = self.directory._open()  # pyright: ignore[reportPrivateUsage]
         _ = reader.seek(self.offset)
         data = reader.read(sizeof(self))
@@ -105,7 +110,7 @@ class DXEntry(DXBase):
         ("block", c_uint32),
     ]
 
-    def __init__(self, parent: "DXEntriesBase", index: int):
+    def __init__(self, parent: "DXEntriesBase", index: int) -> None:
         self.index: int = index
         self.parent: DXEntriesBase = parent
         super().__init__(
@@ -116,7 +121,7 @@ class DXEntry(DXBase):
 
 class DXEntriesBase(DXBase):
     @override
-    def read_from_volume(self):
+    def read_from_volume(self) -> None:
         super().read_from_volume()
 
     @property
@@ -149,7 +154,7 @@ class DXRoot(DXEntriesBase):
         # ("entries", DXEntry * self.count),
     ]
 
-    def __init__(self, inode: "Directory"):
+    def __init__(self, inode: "Directory") -> None:
         super().__init__(inode, 0)
 
 
@@ -163,7 +168,7 @@ class DXFake(LittleEndianStructure):
     ]
 
     @property
-    def expected_magic(self):
+    def expected_magic(self) -> int:
         return 0
 
     @property
@@ -186,7 +191,7 @@ class DXNode(DXEntriesBase):
         # ("entries", DXEntry * self.count),
     ]
 
-    def __init__(self, directory: "Directory", offset: int):
+    def __init__(self, directory: "Directory", offset: int) -> None:
         super().__init__(directory, offset)
 
 
@@ -199,7 +204,7 @@ class DXTail(DXBase):
         ("dt_checksum", c_uint16),
     ]
 
-    def __init__(self, parent: DXNode):
+    def __init__(self, parent: DXNode) -> None:
         self.parent = parent
         count = assert_cast(parent.count, int)  # pyright: ignore[reportAny]
         super().__init__(

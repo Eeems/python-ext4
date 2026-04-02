@@ -1,30 +1,35 @@
 from __future__ import annotations
 
+import errno
 import io
 import os
-import errno
-
-from uuid import UUID
 from pathlib import PurePosixPath
+from uuid import UUID
 
-from cachetools import cachedmethod
-from cachetools import LRUCache
+from cachetools import (
+    LRUCache,
+    cachedmethod,
+)
 
-from ._compat import PeekableStream
-from ._compat import assert_cast
-from .enum import EXT4_INO
-from .superblock import Superblock
-from .inode import Inode
-from .inode import Directory
+from ._compat import (
+    PeekableStream,
+    assert_cast,
+)
 from .blockdescriptor import BlockDescriptor
+from .enum import EXT4_INO
+from .inode import (
+    Directory,
+    Inode,
+)
+from .superblock import Superblock
 
 
 class InvalidStreamException(Exception):
     pass
 
 
-class Inodes(object):
-    def __init__(self, volume: "Volume"):
+class Inodes:
+    def __init__(self, volume: Volume) -> None:
         self.volume: Volume = volume
         self._group_cache: dict[int, tuple[int, int]] = {}
         self._offset_cache: LRUCache[int, int] = LRUCache(maxsize=32)
@@ -55,12 +60,12 @@ class Inodes(object):
         return table_offset + table_entry_index * s_inode_size
 
     @cachedmethod(lambda self: self._getitem_cache)  # pyright: ignore[reportAny]
-    def __getitem__(self, index: int):
+    def __getitem__(self, index: int) -> Inode:
         offset = self.offset(index)
         return Inode(self.volume, offset, index)
 
 
-class Volume(object):
+class Volume:
     def __init__(
         self,
         stream: PeekableStream,
@@ -69,7 +74,7 @@ class Volume(object):
         ignore_magic: bool = False,
         ignore_checksum: bool = False,
         ignore_attr_name_index: bool = False,
-    ):
+    ) -> None:
         errors: list[str] = []
         for name in ("read", "peek", "tell", "seek"):
             if not hasattr(stream, name):
@@ -110,12 +115,12 @@ class Volume(object):
         self.inodes: Inodes = Inodes(self)
         self._inode_at_cache: LRUCache[str | bytes, Inode] = LRUCache(maxsize=32)
 
-    def __len__(self):
+    def __len__(self) -> int:
         _ = self.stream.seek(0, io.SEEK_END)
         return self.stream.tell() - self.offset
 
     @property
-    def bad_blocks(self):
+    def bad_blocks(self) -> Inode:
         return self.inodes[EXT4_INO.BAD]
 
     @property
@@ -123,23 +128,23 @@ class Volume(object):
         return assert_cast(self.inodes[EXT4_INO.ROOT], Directory)
 
     @property
-    def user_quota(self):
+    def user_quota(self) -> Inode:
         return self.inodes[EXT4_INO.USR_QUOTA]
 
     @property
-    def group_quota(self):
+    def group_quota(self) -> Inode:
         return self.inodes[EXT4_INO.GRP_QUOTA]
 
     @property
-    def boot_loader(self):
+    def boot_loader(self) -> Inode:
         return self.inodes[EXT4_INO.BOOT_LOADER]
 
     @property
-    def undelete_directory(self):
+    def undelete_directory(self) -> Inode:
         return self.inodes[EXT4_INO.UNDEL_DIR]
 
     @property
-    def journal(self):
+    def journal(self) -> Inode:
         return self.inodes[EXT4_INO.JOURNAL]
 
     @property
@@ -147,12 +152,12 @@ class Volume(object):
         return self.superblock.has_hi
 
     @property
-    def uuid(self):
+    def uuid(self) -> UUID:
         s_uuid = assert_cast(bytes(self.superblock.s_uuid), bytes)  # pyright: ignore[reportAny]
         return UUID(bytes=s_uuid)
 
     @property
-    def seed(self):
+    def seed(self) -> int:
         return self.superblock.seed
 
     @property
@@ -197,7 +202,7 @@ class Volume(object):
     def tell(self) -> int:
         return self.cursor
 
-    def block_read(self, index: int, count: int = 1):
+    def block_read(self, index: int, count: int = 1) -> bytes:
         assert index >= 0
         assert count > 0
         block_size = self.block_size  # Only calculate once

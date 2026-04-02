@@ -3,18 +3,20 @@ from __future__ import annotations
 import os
 import sys
 import traceback
-import ext4
-
+from collections.abc import Callable
 from io import BufferedReader
-from typing import cast
-from typing import Callable
-from typing import Any
+from typing import (
+    Any,
+    cast,
+)
+
+import ext4
 
 FAILED = False
 
 
-def test_path_tuple(path: str | bytes, expected: tuple[bytes, ...]):
-    global FAILED
+def test_path_tuple(path: str | bytes, expected: tuple[bytes, ...]) -> None:
+    global FAILED  # noqa: PLW0603
     print(f"check Volume.path_tuple({path}): ", end="")
     try:
         t = ext4.Volume.path_tuple(path)
@@ -30,17 +32,17 @@ def test_path_tuple(path: str | bytes, expected: tuple[bytes, ...]):
         print(e)
 
 
-def _eval_or_False(source: str) -> Any:  # pyright: ignore[reportExplicitAny, reportAny]
+def _eval_or_False(source: str) -> Any:  # pyright: ignore[reportExplicitAny, reportAny]  # noqa: ANN401
     try:
-        return eval(source)  # pyright: ignore[reportAny]
+        return eval(source)  # pyright: ignore[reportAny]  # noqa: S307
 
     except Exception:
         traceback.print_exc()
         return False
 
 
-def _assert(source: str, debug: Callable[[], Any] | None = None):  # pyright: ignore[reportExplicitAny]
-    global FAILED
+def _assert(source: str, debug: Callable[[], Any] | None = None) -> None:  # pyright: ignore[reportExplicitAny]
+    global FAILED  # noqa: PLW0603
     print(f"check {source}: ", end="")
     if _eval_or_False(source):
         print("pass")
@@ -52,8 +54,8 @@ def _assert(source: str, debug: Callable[[], Any] | None = None):  # pyright: ig
         print(f"  {debug()}")
 
 
-def test_magic_error(f: BufferedReader):
-    global FAILED
+def test_magic_error(f: BufferedReader) -> None:
+    global FAILED  # noqa: PLW0603
     try:
         print("check MagicError: ", end="")
         _ = ext4.Volume(f, offset=0)
@@ -70,8 +72,8 @@ def test_magic_error(f: BufferedReader):
         print(e)
 
 
-def test_root_inode(volume: ext4.Volume):
-    global FAILED
+def test_root_inode(volume: ext4.Volume) -> None:
+    global FAILED  # noqa: PLW0603
     try:
         print("Validate root inode: ", end="")
         volume.root.validate()
@@ -125,6 +127,10 @@ for img_file in ("test32.ext4", "test64.ext4"):
             traceback.print_exc()
             continue
 
+        _assert("volume.superblock is not None")
+        _assert("volume.bad_blocks is not None")
+        _assert("volume.boot_loader is not None")
+        _assert("volume.journal is not None")
         test_root_inode(volume)
         _assert('volume.root.inode_at("test.txt") == volume.inode_at("/test.txt")')
         _assert('volume.root.inode_at("/test.txt") == volume.inode_at("/test.txt")')
@@ -168,6 +174,10 @@ with open(img_file, "rb") as f:
         traceback.print_exc()
 
     if volume is not None:
+        _assert("volume.superblock is not None")
+        _assert("volume.bad_blocks is not None")
+        _assert("volume.boot_loader is not None")
+        _assert("volume.journal is not None")
         test_root_inode(volume)
         _assert("volume.root.is_htree == True")
         _assert("volume.root.htree is not None")

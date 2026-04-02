@@ -1,2 +1,0 @@
-cachetools==6.0.0
-crcmod==1.7

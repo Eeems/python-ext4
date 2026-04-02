@@ -1,36 +1,38 @@
 # pyright: reportImportCycles=false
-import io
 import errno
+import io
+import os
+from typing import TYPE_CHECKING
 
 from ._compat import override
 
-from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
+    from .extent import Extent
     from .inode import Inode
+    from .volume import Volume
 
 
-class BlockIOBlocks(object):
-    def __init__(self, blockio: "BlockIO"):
+class BlockIOBlocks:
+    def __init__(self, blockio: "BlockIO") -> None:
         self.blockio: BlockIO = blockio
         self._null_block: bytearray = bytearray(self.block_size)
 
     @property
-    def block_size(self):
+    def block_size(self) -> int:
         return self.blockio.block_size
 
     @property
-    def volume(self):
+    def volume(self) -> "Volume":
         return self.blockio.inode.volume
 
-    def __contains__(self, ee_block: int):
+    def __contains__(self, ee_block: int) -> bool:
         for extent in self.blockio.extents:
             if ee_block in extent.blocks:
                 return True
 
         return False
 
-    def __getitem__(self, ee_block: int):
+    def __getitem__(self, ee_block: int) -> bytearray | bytes:
         for extent in self.blockio.extents:
             if ee_block not in extent.blocks:
                 continue
@@ -41,17 +43,17 @@ class BlockIOBlocks(object):
 
 
 class BlockIO(io.RawIOBase):
-    def __init__(self, inode: "Inode"):
+    def __init__(self, inode: "Inode") -> None:
         super().__init__()
-        self.inode: "Inode" = inode
+        self.inode: Inode = inode
         self.cursor: int = 0
         self.blocks: BlockIOBlocks = BlockIOBlocks(self)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.inode.i_size
 
     @property
-    def extents(self):
+    def extents(self) -> "list[Extent]":
         return self.inode.extents
 
     @property
@@ -78,7 +80,7 @@ class BlockIO(io.RawIOBase):
             raise NotImplementedError()
 
         if offset < 0:
-            raise OSError(errno.EINVAL, "Invalid argument")
+            raise OSError(errno.EINVAL, os.strerror(errno.EINVAL))
 
         self.cursor = offset
         return offset

@@ -161,3 +161,6 @@ cython_debug/
 
 *.ext4
 *.ext4.tmp
+crash-*
+timeout-*
+corpus/seed/

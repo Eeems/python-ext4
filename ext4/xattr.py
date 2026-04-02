@@ -1,22 +1,28 @@
 import warnings
-
-from ctypes import c_uint32
-from ctypes import c_uint16
-from ctypes import c_uint8
-from ctypes import sizeof
-
-from typing import final
-from typing import TYPE_CHECKING
-
 from collections.abc import Generator
+from ctypes import (
+    c_uint8,
+    c_uint16,
+    c_uint32,
+    sizeof,
+)
+from typing import (
+    TYPE_CHECKING,
+    final,
+)
 
-from .enum import EXT4_FL
-from .enum import EXT4_FEATURE_INCOMPAT
-
-from .struct import Ext4Struct
-from .struct import crc32c
-
-from ._compat import assert_cast, override
+from ._compat import (
+    assert_cast,
+    override,
+)
+from .enum import (
+    EXT4_FEATURE_INCOMPAT,
+    EXT4_FL,
+)
+from .struct import (
+    Ext4Struct,
+    crc32c,
+)
 
 if TYPE_CHECKING:
     from .inode import Inode
@@ -27,8 +33,8 @@ class ExtendedAttributeError(Exception):
 
 
 class ExtendedAttributeBase(Ext4Struct):
-    def __init__(self, inode: "Inode", offset: int, size: int):
-        self.inode: "Inode" = inode
+    def __init__(self, inode: "Inode", offset: int, size: int) -> None:
+        self.inode: Inode = inode
         self.data_size: int = size
         super().__init__(inode.volume, offset)
 
@@ -41,7 +47,7 @@ class ExtendedAttributeIBodyHeader(ExtendedAttributeBase):
     ]
 
     @ExtendedAttributeBase.ignore_magic.getter
-    def ignore_magic(self):
+    def ignore_magic(self) -> bool:
         return False
 
     @ExtendedAttributeBase.magic.getter
@@ -50,7 +56,7 @@ class ExtendedAttributeIBodyHeader(ExtendedAttributeBase):
         return h_magic
 
     @ExtendedAttributeBase.expected_magic.getter
-    def expected_magic(self):
+    def expected_magic(self) -> int:
         return 0xEA020000
 
     def value_offset(self, entry: "ExtendedAttributeEntry") -> int:
@@ -111,7 +117,7 @@ class ExtendedAttributeHeader(ExtendedAttributeIBodyHeader):
     ]
 
     @override
-    def verify(self):
+    def verify(self) -> None:
         super().verify()
         h_blocks = assert_cast(self.h_blocks, int)  # pyright: ignore[reportAny]
         if h_blocks != 1:
@@ -126,7 +132,7 @@ class ExtendedAttributeHeader(ExtendedAttributeIBodyHeader):
         return self.offset + e_value_offs
 
     @ExtendedAttributeIBodyHeader.expected_checksum.getter
-    def expected_checksum(self):
+    def expected_checksum(self) -> int | None:
         h_checksum = assert_cast(self.h_checksum, int)  # pyright: ignore[reportAny]
         if not h_checksum:
             return None
@@ -134,7 +140,7 @@ class ExtendedAttributeHeader(ExtendedAttributeIBodyHeader):
         return h_checksum
 
     @ExtendedAttributeIBodyHeader.checksum.getter
-    def checksum(self):
+    def checksum(self) -> int | None:
         h_checksum = assert_cast(self.h_checksum, int)  # pyright: ignore[reportAny]
         if not h_checksum:
             return None
@@ -172,7 +178,7 @@ class ExtendedAttributeEntry(ExtendedAttributeBase):
     ]
 
     @override
-    def read_from_volume(self):
+    def read_from_volume(self) -> None:
         super().read_from_volume()
         e_name_len = assert_cast(self.e_name_len, int)  # pyright: ignore[reportAny]
         self.e_name: bytes = self.volume.stream.read(e_name_len)  # pyright: ignore[reportUninitializedInstanceVariable]

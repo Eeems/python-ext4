@@ -3,7 +3,6 @@ VERSION := $(shell grep -m 1 version pyproject.toml | tr -s ' ' | tr -d "'\":" |
 PACKAGE := $(shell grep -m 1 name pyproject.toml | tr -s ' ' | tr -d "'\":" | cut -d' ' -f3)
 
 OBJ := $(wildcard ${PACKAGE}/**)
-OBJ += requirements.txt
 OBJ += pyproject.toml
 OBJ += README.md
 OBJ += LICENSE
@@ -19,19 +18,24 @@ else
 	endif
 endif
 
-ifeq ($(PYTHON),)
-PYTHON := python
+ifeq ($(FUZZ_TIMEOUT),)
+FUZZ_TIMEOUT := 60
 endif
 
+.PHONY: clean
 clean:
 	git clean --force -dX
 
+.PHONY: build
 build: wheel
 
+.PHONY: release
 release: wheel sdist
 
+.PHONY: sdist
 sdist: dist/${PACKAGE}-${VERSION}.tar.gz
 
+.PHONY: wheel
 wheel: dist/${PACKAGE}-${VERSION}-py3-none-any.whl
 
 dist:
@@ -39,55 +43,81 @@ dist:
 
 dist/${PACKAGE}-${VERSION}.tar.gz: ${VENV_BIN_ACTIVATE} dist $(OBJ)
 	. ${VENV_BIN_ACTIVATE}; \
-	$(PYTHON) -m build --sdist
+	python -m build --sdist
 
 dist/${PACKAGE}-${VERSION}-py3-none-any.whl: ${VENV_BIN_ACTIVATE} dist $(OBJ)
 	. ${VENV_BIN_ACTIVATE}; \
-	$(PYTHON) -m build --wheel
+	python -m build --wheel
 
-${VENV_BIN_ACTIVATE}: requirements.txt
+${VENV_BIN_ACTIVATE}: pyproject.toml
 	@echo "Setting up development virtual env in .venv"
-	$(PYTHON) -m venv .venv
+	python -m venv .venv
 	. ${VENV_BIN_ACTIVATE}; \
-	$(PYTHON) -m pip install \
-	  wheel \
-	  build \
-	  ruff \
-	  basedpyright; \
-	$(PYTHON) -m pip install \
-	    -r requirements.txt
+	python -m pip install \
+	  --require-virtualenv \
+	  --editable \
+	  .[dev];
 
+.PHONY: test
 test: ${VENV_BIN_ACTIVATE}
+	@. ${VENV_BIN_ACTIVATE}; \
+	python -m pip install \
+	  --require-virtualenv \
+	  --editable \
+	  .[test];
 	$(SHELL) test.sh
 
+.PHONY: fuzz
+fuzz: ${VENV_BIN_ACTIVATE}
+	@. ${VENV_BIN_ACTIVATE}; \
+	python -m pip install \
+	  --require-virtualenv \
+	  --editable \
+	  .[fuzz]
+	. ${VENV_BIN_ACTIVATE};\
+	python fuzz.py \
+	  -rss_limit_mb=2048 \
+	  -max_total_time=$(FUZZ_TIMEOUT)
+
+.PHONY: all
 all: release
 
-lint: $(VENV_BIN_ACTIVATE)
+.PHONY: lint
+lint: $(VENV_BIN_ACTIVATE);
+	@. ${VENV_BIN_ACTIVATE}; \
+	python -m pip install \
+	  --require-virtualenv \
+	  --editable \
+	    .[test]; \
+	python -m pip install \
+	  --require-virtualenv \
+	  --editable \
+	    .[fuzz]
 	. $(VENV_BIN_ACTIVATE); \
-	$(PYTHON) -m ruff check; \
-	$(PYTHON) -m basedpyright
+	python -m ruff check; \
+	python -m basedpyright
 
-lint-fix: $(VENV_BIN_ACTIVATE)
+.PHONY: lint-fix
+lint-fix: $(VENV_BIN_ACTIVATE); \
+	@. ${VENV_BIN_ACTIVATE}; \
+	python -m pip install \
+	  --require-virtualenv \
+	  --editable \
+	    .[test]; \
+	python -m pip install \
+	  --require-virtualenv \
+	  --editable \
+	    .[fuzz]
 	. $(VENV_BIN_ACTIVATE); \
-	$(PYTHON) -m ruff check --fix; \
-	$(PYTHON) -m basedpyright
+	python -m ruff check --fix; \
+	python -m basedpyright
 
+.PHONY: format
 format: $(VENV_BIN_ACTIVATE)
 	. $(VENV_BIN_ACTIVATE); \
-	$(PYTHON) -m ruff format --diff
+	python -m ruff format --diff
 
+.PHONY: format-fix
 format-fix: $(VENV_BIN_ACTIVATE)
 	. $(VENV_BIN_ACTIVATE); \
-	$(PYTHON) -m ruff format
-
-.PHONY: \
-	all \
-	build \
-	clean \
-	sdist \
-	wheel \
-	test \
-	lint \
-	lint-fix \
-	format \
-	format-fix
+	python -m ruff format

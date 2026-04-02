@@ -1,18 +1,22 @@
+# pyright: reportUnnecessaryTypeIgnoreComment=false
+# pyright: reportIgnoreCommentWithoutRule=false
+# pyright: reportUnreachable=false
+# pyright: reportExplicitAny=false
+# pyright: reportAny=false
 import os
-from typing import Protocol
-from typing import runtime_checkable
-from typing import TypeVar
-from typing import Any
+import sys
+from typing import (
+    Any,
+    Protocol,
+    TypeVar,
+    runtime_checkable,
+)
 
-# Added in python 3.12
-try:
-    from typing import override  # pyright: ignore[reportAssignmentType]
+if sys.version_info < (3, 12):
+    from typing_extensions import override
 
-except ImportError:
-    from typing import Callable
-
-    def override(fn: Callable[..., Any]):  # pyright: ignore[reportExplicitAny]
-        return fn
+else:
+    from typing import override
 
 
 @runtime_checkable
@@ -32,8 +36,8 @@ class PeekableStream(ReadableStream, Protocol):
 T = TypeVar("T")
 
 
-def assert_cast(obj: Any, t: type[T], /) -> T:  # pyright: ignore[reportExplicitAny, reportAny]
-    assert isinstance(obj, t), f"Object is: {type(obj)} not {t}"  # pyright: ignore[reportAny]
+def assert_cast(obj: Any, t: type[T], /) -> T:
+    assert isinstance(obj, t), f"Object is: {type(obj)} not {t}"
     return obj
 
 

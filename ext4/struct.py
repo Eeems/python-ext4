@@ -1,15 +1,22 @@
 # pyright: reportImportCycles=false
-import warnings
 import ctypes
+import errno
+import warnings
+from collections.abc import Callable
+from ctypes import (
+    LittleEndianStructure,
+    addressof,
+    memmove,
+    sizeof,
+)
+from typing import (
+    TYPE_CHECKING,
+    cast,
+)
 
-from ctypes import LittleEndianStructure
-from ctypes import memmove
-from ctypes import addressof
-from ctypes import sizeof
-from crcmod import mkCrcFun  # pyright: ignore[reportMissingTypeStubs, reportUnknownVariableType]
-from typing import cast
-from typing import Callable
-from typing import TYPE_CHECKING
+from crcmod import (
+    mkCrcFun,  # pyright: ignore[reportUnknownVariableType]
+)
 
 if TYPE_CHECKING:
     from .volume import Volume
@@ -68,9 +75,9 @@ def to_hex(data: int | list[int] | bytes | None) -> str:
 
 
 class Ext4Struct(LittleEndianStructure):
-    def __init__(self, volume: "Volume", offset: int):
+    def __init__(self, volume: "Volume", offset: int) -> None:
         super().__init__()
-        self.volume: "Volume" = volume
+        self.volume: Volume = volume
         self.offset: int = offset
         self.read_from_volume()
         self.verify()
@@ -85,41 +92,42 @@ class Ext4Struct(LittleEndianStructure):
 
         return None
 
-    def read_from_volume(self):
+    def read_from_volume(self) -> None:
         _ = self.volume.seek(self.offset)
         data = self.volume.read(sizeof(self))
         if len(data) != sizeof(self):
             raise OSError(
-                f"Short read for {type(self).__name__} at offset {self.offset}"
+                errno.EIO,
+                f"Short read for {type(self).__name__} at offset {self.offset}",
             )
 
         _ = memmove(addressof(self), data, sizeof(self))
 
     @property
-    def size(self):
+    def size(self) -> int:
         return sizeof(self)
 
     @property
-    def magic(self):
+    def magic(self) -> int | None:
         return None
 
     @property
-    def expected_magic(self) -> None:
+    def expected_magic(self) -> int | None:
         return None
 
     @property
-    def checksum(self):
+    def checksum(self) -> int | None:
         return None
 
     @property
-    def expected_checksum(self):
+    def expected_checksum(self) -> int | None:
         return None
 
     @property
-    def ignore_magic(self):
+    def ignore_magic(self) -> bool:
         return self.volume.ignore_magic
 
-    def verify(self):
+    def verify(self) -> None:
         """
         Verify magic numbers
         """
@@ -136,7 +144,7 @@ class Ext4Struct(LittleEndianStructure):
 
         warnings.warn(message, RuntimeWarning)
 
-    def validate(self):
+    def validate(self) -> None:
         """
         Validate data checksums
         """

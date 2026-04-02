@@ -1,57 +1,66 @@
 # pyright: reportImportCycles=false
 from __future__ import annotations
 
+import errno
 import io
 import os
-import errno
 import warnings
-
-from ctypes import LittleEndianStructure
-from ctypes import Union
-from ctypes import c_uint32
-from ctypes import c_uint16
-from ctypes import sizeof
-
-from typing import cast
-from typing import final
-from typing import Any
-from typing import TYPE_CHECKING
-
-from cachetools import cachedmethod
-from cachetools import LRUCache
-
-from ._compat import override
-from ._compat import ReadableStream
-from ._compat import assert_cast
-
 from collections.abc import Generator
+from ctypes import (
+    LittleEndianStructure,
+    Union,
+    c_uint16,
+    c_uint32,
+    sizeof,
+)
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    cast,
+    final,
+)
 
-from .struct import crc32c
-from .struct import Ext4Struct
-from .struct import MagicError
+from cachetools import (
+    LRUCache,
+    cachedmethod,
+)
 
-from .enum import EXT4_OS
-from .enum import EXT4_FL
-from .enum import EXT4_FEATURE_INCOMPAT
-from .enum import MODE
-from .enum import EXT4_FT
-
-from .extent import Extent
-from .extent import ExtentHeader
-from .extent import ExtentIndex
-from .extent import ExtentTree
-
+from ._compat import (
+    ReadableStream,
+    assert_cast,
+    override,
+)
 from .block import BlockIO
-
-from .directory import DirectoryEntry
-from .directory import DirectoryEntry2
-from .directory import DirectoryEntryHash
-from .directory import EXT4_DIR_ROUND
-
+from .directory import (
+    EXT4_DIR_ROUND,
+    DirectoryEntry,
+    DirectoryEntry2,
+    DirectoryEntryHash,
+)
+from .enum import (
+    EXT4_FEATURE_INCOMPAT,
+    EXT4_FL,
+    EXT4_FT,
+    EXT4_OS,
+    MODE,
+)
+from .extent import (
+    Extent,
+    ExtentHeader,
+    ExtentIndex,
+    ExtentTree,
+)
 from .htree import DXRoot
-
-from .xattr import ExtendedAttributeIBodyHeader
-from .xattr import ExtendedAttributeHeader
+from .struct import (
+    Ext4Struct,
+    MagicError,
+    crc32c,
+)
+from .superblock import Superblock
+from .xattr import (
+    ExtendedAttributeHeader,
+    ExtendedAttributeIBodyHeader,
+)
 
 if TYPE_CHECKING:
     from .volume import Volume
@@ -182,42 +191,75 @@ class Inode(Ext4Struct):
         ("i_projid", c_uint32),
     ]
 
-    def __new__(cls, volume: "Volume", offset: int, i_no: int):
-        if cls is not Inode:
-            return super().__new__(cls)
-
+    @classmethod
+    def get_file_type(cls, volume: Volume, offset: int) -> EXT4_FT:
         _ = volume.seek(offset + Inode.i_mode.offset)
-        file_type: MODE = cast(
+        file_type = cast(
             MODE,
             Inode.field_type("i_mode").from_buffer_copy(  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportOptionalMemberAccess]
                 volume.read(Inode.i_mode.size)
             )
             & 0xF000,
         )
-        if file_type == MODE.IFIFO:
-            return super().__new__(Fifo)  # pyright: ignore[reportArgumentType]
+        match file_type:
+            case MODE.IFIFO:
+                return EXT4_FT.FIFO  # pyright: ignore[reportReturnType]
 
-        if file_type == MODE.IFDIR:
-            return super().__new__(Directory)  # pyright: ignore[reportArgumentType]
+            case MODE.IFCHR:
+                return EXT4_FT.CHRDEV  # pyright: ignore[reportReturnType]
 
-        if file_type == MODE.IFREG:
-            return super().__new__(File)  # pyright: ignore[reportArgumentType]
+            case MODE.IFDIR:
+                return EXT4_FT.DIR  # pyright: ignore[reportReturnType]
 
-        if file_type == MODE.IFLNK:
-            return super().__new__(SymbolicLink)  # pyright: ignore[reportArgumentType]
+            case MODE.IFBLK:
+                return EXT4_FT.BLKDEV  # pyright: ignore[reportReturnType]
 
-        if file_type == MODE.IFCHR:
-            return super().__new__(CharacterDevice)  # pyright: ignore[reportArgumentType]
+            case MODE.IFREG:
+                return EXT4_FT.REG_FILE  # pyright: ignore[reportReturnType]
 
-        if file_type == MODE.IFBLK:
-            return super().__new__(BlockDevice)  # pyright: ignore[reportArgumentType]
+            case MODE.IFLNK:
+                return EXT4_FT.SYMLINK  # pyright: ignore[reportReturnType]
 
-        if file_type == MODE.IFSOCK:
-            return super().__new__(Socket)  # pyright: ignore[reportArgumentType]
+            case MODE.IFSOCK:
+                return EXT4_FT.SOCK  # pyright: ignore[reportReturnType]
 
-        raise InodeError(f"Unknown file type 0x{file_type:X}")
+            case _:
+                return EXT4_FT.UNKNOWN  # pyright: ignore[reportReturnType]
 
-    def __init__(self, volume: "Volume", offset: int, i_no: int):
+    def __new__(cls, volume: Volume, offset: int, i_no: int) -> Inode:
+        if cls is not Inode:
+            return super().__new__(cls)
+
+        file_type = cls.get_file_type(volume, offset)
+        match file_type:
+            case EXT4_FT.FIFO:
+                return super().__new__(Fifo)  # pyright: ignore[reportArgumentType]
+
+            case EXT4_FT.DIR:
+                return super().__new__(Directory)  # pyright: ignore[reportArgumentType]
+
+            case EXT4_FT.REG_FILE:
+                return super().__new__(File)  # pyright: ignore[reportArgumentType]
+
+            case EXT4_FT.SYMLINK:
+                return super().__new__(SymbolicLink)  # pyright: ignore[reportArgumentType]
+
+            case EXT4_FT.CHRDEV:
+                return super().__new__(CharacterDevice)  # pyright: ignore[reportArgumentType]
+
+            case EXT4_FT.BLKDEV:
+                return super().__new__(BlockDevice)  # pyright: ignore[reportArgumentType]
+
+            case EXT4_FT.SOCK:
+                return super().__new__(Socket)  # pyright: ignore[reportArgumentType]
+
+            case EXT4_FT.UNKNOWN:
+                return super().__new__(UnknownInode)  # pyright: ignore[reportArgumentType]
+
+            case _:
+                raise InodeError(f"Unknown file type 0x{file_type:X}")
+
+    def __init__(self, volume: Volume, offset: int, i_no: int) -> None:
         self.i_no: int = i_no
         super().__init__(volume, offset)
         self.tree: ExtentTree | None = ExtentTree(self)
@@ -233,11 +275,11 @@ class Inode(Ext4Struct):
         return self.volume.read(self.superblock.s_inode_size - size)  # pyright: ignore[reportAny]
 
     @property
-    def superblock(self):
+    def superblock(self) -> Superblock:
         return self.volume.superblock
 
     @property
-    def block_size(self):
+    def block_size(self) -> int:
         return self.volume.block_size
 
     @property
@@ -411,6 +453,10 @@ class Inode(Ext4Struct):
                     raise
 
 
+class UnknownInode(Inode):
+    pass
+
+
 class Fifo(Inode):
     pass
 
@@ -436,12 +482,12 @@ class File(Inode):
 
 
 class SymbolicLink(Inode):
-    def readlink(self):
+    def readlink(self) -> bytes:
         return self._open().read()
 
 
 class Directory(Inode):
-    def __init__(self, volume: "Volume", offset: int, i_no: int):
+    def __init__(self, volume: Volume, offset: int, i_no: int) -> None:
         super().__init__(volume, offset, i_no)
         self._inode_at_cache: LRUCache[str | bytes, Inode] = LRUCache(maxsize=32)
         self._dirents: None | list[DirectoryEntry | DirectoryEntry2] = None
@@ -450,12 +496,12 @@ class Directory(Inode):
             self.htree = DXRoot(self)
 
     @override
-    def verify(self):
+    def verify(self) -> None:
         super().verify()
         # TODO verify DirectoryEntryHash? Or should this be in validate?
 
     @override
-    def validate(self):
+    def validate(self) -> None:
         super().validate()
         # TODO validate each directory entry block with DirectoryEntryTail
 
@@ -528,41 +574,19 @@ class Directory(Inode):
 
         self._dirents = dirents
 
+    def _is_valid_file_type(self, file_type: EXT4_FT) -> bool:
+        return file_type != EXT4_FT.UNKNOWN and file_type < EXT4_FT.MAX
+
     def _get_file_type(self, dirent: DirectoryEntry | DirectoryEntry2) -> EXT4_FT:
         dirent_inode = assert_cast(dirent.inode, int)  # pyright: ignore[reportAny]
         offset = self.volume.inodes.offset(dirent_inode)
-        _ = self.volume.seek(offset + Inode.i_mode.offset)
-        file_type = cast(
-            MODE,
-            Inode.field_type("i_mode").from_buffer_copy(  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportOptionalMemberAccess]
-                self.volume.read(Inode.i_mode.size)
+        file_type = self.get_file_type(self.volume, offset)
+        if not self._is_valid_file_type(file_type):
+            raise OpenDirectoryError(
+                f"Unexpected file type {file_type} for inode {dirent_inode}"
             )
-            & 0xF000,
-        )
-        if file_type == MODE.IFIFO:
-            return EXT4_FT.FIFO  # pyright: ignore[reportReturnType]
 
-        if file_type == MODE.IFCHR:
-            return EXT4_FT.CHRDEV  # pyright: ignore[reportReturnType]
-
-        if file_type == MODE.IFDIR:
-            return EXT4_FT.DIR  # pyright: ignore[reportReturnType]
-
-        if file_type == MODE.IFBLK:
-            return EXT4_FT.BLKDEV  # pyright: ignore[reportReturnType]
-
-        if file_type == MODE.IFREG:
-            return EXT4_FT.REG_FILE  # pyright: ignore[reportReturnType]
-
-        if file_type == MODE.IFLNK:
-            return EXT4_FT.SYMLINK  # pyright: ignore[reportReturnType]
-
-        if file_type == MODE.IFSOCK:
-            return EXT4_FT.SOCK  # pyright: ignore[reportReturnType]
-
-        raise OpenDirectoryError(
-            f"Unexpected file type {file_type} for inode {dirent_inode}"
-        )
+        return file_type
 
     def opendir(
         self,
@@ -573,7 +597,7 @@ class Directory(Inode):
                 if file_type == EXT4_FT.DIR_CSUM:
                     continue
 
-                if file_type == EXT4_FT.UNKNOWN or file_type > EXT4_FT.MAX:
+                if not self._is_valid_file_type(file_type):
                     raise OpenDirectoryError(f"Unexpected file type: {file_type}")
 
             else:

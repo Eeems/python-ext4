@@ -1,31 +1,36 @@
 # pyright: reportImportCycles=false
-from ctypes import c_uint64
-from ctypes import c_uint32
-from ctypes import c_uint16
-from ctypes import c_uint8
-from ctypes import c_ubyte
-
-from typing import final
-from typing import TYPE_CHECKING
-
-from .enum import EXT4_FS
-from .enum import EXT4_ERRORS
-from .enum import EXT4_OS
-from .enum import EXT4_REV
-from .enum import EXT4_FEATURE_COMPAT
-from .enum import EXT4_FEATURE_INCOMPAT
-from .enum import EXT4_FEATURE_RO_COMPAT
-from .enum import DX_HASH
-from .enum import EXT4_DEFM
-from .enum import EXT2_FLAGS
-from .enum import EXT4_CHKSUM
-from .enum import EXT4_MOUNT
-from .enum import FS_ENCRYPTION_MODE
-
-from .struct import Ext4Struct
-from .struct import crc32c
+from ctypes import (
+    c_ubyte,
+    c_uint8,
+    c_uint16,
+    c_uint32,
+    c_uint64,
+)
+from typing import (
+    TYPE_CHECKING,
+    final,
+)
 
 from ._compat import assert_cast
+from .enum import (
+    DX_HASH,
+    EXT2_FLAGS,
+    EXT4_CHKSUM,
+    EXT4_DEFM,
+    EXT4_ERRORS,
+    EXT4_FEATURE_COMPAT,
+    EXT4_FEATURE_INCOMPAT,
+    EXT4_FEATURE_RO_COMPAT,
+    EXT4_FS,
+    EXT4_MOUNT,
+    EXT4_OS,
+    EXT4_REV,
+    FS_ENCRYPTION_MODE,
+)
+from .struct import (
+    Ext4Struct,
+    crc32c,
+)
 
 if TYPE_CHECKING:
     from .volume import Volume
@@ -132,7 +137,7 @@ class Superblock(Ext4Struct):
         ("s_checksum", c_uint32),
     ]
 
-    def __init__(self, volume: "Volume", _=None):
+    def __init__(self, volume: "Volume", _=None) -> None:
         super().__init__(volume, 0x400)
 
     @property

@@ -1,14 +1,20 @@
 # pyright: reportImportCycles=false
-from ctypes import c_uint32
-from ctypes import c_uint16
+from ctypes import (
+    c_uint16,
+    c_uint32,
+)
+from typing import (
+    TYPE_CHECKING,
+    final,
+)
 
-from typing import final
-from typing import TYPE_CHECKING
-
-from .enum import EXT4_BG
-from .struct import Ext4Struct
-from .struct import crc32c
 from ._compat import assert_cast
+from .enum import EXT4_BG
+from .struct import (
+    Ext4Struct,
+    crc32c,
+)
+from .superblock import Superblock
 
 if TYPE_CHECKING:
     from .volume import Volume
@@ -44,7 +50,7 @@ class BlockDescriptor(Ext4Struct):
         ("bg_reserved", c_uint32),
     ]
 
-    def __init__(self, volume: "Volume", offset: int, bg_no: int):
+    def __init__(self, volume: "Volume", offset: int, bg_no: int) -> None:
         super().__init__(volume, offset)
         self.bg_no: int = bg_no
 
@@ -139,11 +145,11 @@ class BlockDescriptor(Ext4Struct):
         return bg_inode_table_lo
 
     @property
-    def superblock(self):
+    def superblock(self) -> Superblock:
         return self.volume.superblock
 
     @Ext4Struct.checksum.getter
-    def checksum(self):
+    def checksum(self) -> int:
         csum = crc32c(self.bg_no.to_bytes(4, "little"), self.volume.seed)
         csum = crc32c(bytes(self)[: BlockDescriptor.bg_checksum.offset], csum)
         if self.volume.has_hi:
