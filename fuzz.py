@@ -1,4 +1,3 @@
-import errno
 import os
 import random
 import string
@@ -11,29 +10,25 @@ import atheris
 
 warnings.filterwarnings("ignore")
 
-MIN_DATA_SIZE = 145
+EXPECTED_DATA_SIZE = 145
+
 
 seed_file = os.path.join("corpus", "seed", "seed.bin")
-if not os.path.exists(seed_file) or os.path.getsize(seed_file) != MIN_DATA_SIZE:
+if not os.path.exists(seed_file) or os.stat(seed_file).st_size != EXPECTED_DATA_SIZE:
     os.makedirs(os.path.dirname(seed_file), exist_ok=True)
     with open(seed_file, "wb") as f:
-        _ = f.write(b"\x00" * MIN_DATA_SIZE)
+        _ = f.write(b"\x00" * EXPECTED_DATA_SIZE)
 
 with atheris.instrument_imports():
     from ext4 import (
-        EXT4_INO,
         Directory,
         File,
-        InodeError,
         SymbolicLink,
         Volume,
     )
 
 
 def TestOneInput(data: bytes) -> None:
-    if len(data) < MIN_DATA_SIZE:
-        return
-
     fdp = atheris.FuzzedDataProvider(data)
 
     img_size: int = fdp.ConsumeIntInRange(32, 64)
@@ -45,7 +40,6 @@ def TestOneInput(data: bytes) -> None:
     num_hardlinks: int = fdp.ConsumeIntInRange(0, 5)
     num_xattr_files: int = fdp.ConsumeIntInRange(0, 10)
     max_file_size: int = fdp.ConsumeIntInRange(1, 64)
-
     rng_seed: int = fdp.ConsumeInt(1024)
     rng = random.Random(rng_seed)  # noqa: S311
 
@@ -186,8 +180,21 @@ def TestOneInput(data: bytes) -> None:
                 os.remove(img_path)
 
 
-argv = [sys.argv[0], "corpus", "-timeout=30", *sys.argv[1:]]
+def custom_mutator(data: bytes, _max_size: int, _seed: int) -> bytes:
+    if len(data) >= EXPECTED_DATA_SIZE:
+        return data[:EXPECTED_DATA_SIZE]
+
+    return data + b"\x00" * (EXPECTED_DATA_SIZE - len(data))
+
+
+argv = [
+    sys.argv[0],
+    "corpus",
+    "-timeout=30",
+    f"-max_len={EXPECTED_DATA_SIZE}",
+    *sys.argv[1:],
+]
 print("argv: ", end="")
 print(argv)
-_ = atheris.Setup(argv, TestOneInput)
+_ = atheris.Setup(argv, TestOneInput, custom_mutator=custom_mutator)
 atheris.Fuzz()
