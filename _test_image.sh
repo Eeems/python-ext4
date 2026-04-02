@@ -28,6 +28,7 @@ trap "rm -r \"$tmp_dir\"" EXIT
 echo "[test] Using temporary directory: $tmp_dir"
 echo "[test] Generating files..."
 echo "hello world" >"$tmp_dir"/test.txt
+ln -s test.txt "$tmp_dir"/symlink.txt
 for i in {1..1000}; do
   echo "echo "hello world" >>'$tmp_dir/test.txt'"
 done | xargs -P "$(nproc)" -I {} bash -c '{}'
