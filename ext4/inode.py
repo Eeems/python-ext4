@@ -574,11 +574,14 @@ class Directory(Inode):
 
         self._dirents = dirents
 
+    def _is_valid_file_type(self, file_type: EXT4_FT) -> bool:
+        return file_type != EXT4_FT.UNKNOWN and file_type < EXT4_FT.MAX
+
     def _get_file_type(self, dirent: DirectoryEntry | DirectoryEntry2) -> EXT4_FT:
         dirent_inode = assert_cast(dirent.inode, int)  # pyright: ignore[reportAny]
         offset = self.volume.inodes.offset(dirent_inode)
         file_type = self.get_file_type(self.volume, offset)
-        if EXT4_FT.UNKNOWN >= file_type >= EXT4_FT.MAX:
+        if not self._is_valid_file_type(file_type):
             raise OpenDirectoryError(
                 f"Unexpected file type {file_type} for inode {dirent_inode}"
             )
@@ -594,7 +597,7 @@ class Directory(Inode):
                 if file_type == EXT4_FT.DIR_CSUM:
                     continue
 
-                if file_type == EXT4_FT.UNKNOWN or file_type > EXT4_FT.MAX:
+                if not self._is_valid_file_type(file_type):
                     raise OpenDirectoryError(f"Unexpected file type: {file_type}")
 
             else:
