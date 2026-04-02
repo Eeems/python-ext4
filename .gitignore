@@ -166,3 +166,4 @@ crash-*
 timeout-*
 oom-*
 slow-unit-*
+wheelhouse/

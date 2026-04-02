@@ -59,8 +59,8 @@ packages = [
 readme = {file= ["README.md"], content-type = "text/markdown"}
 
 [build-system]
-requires = ["setuptools >= 61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["setuptools>=70.1", "nuitka>=4.0.6"]
+build-backend = "nuitka.distutils.Build"
 
 [tool.ruff]
 exclude = [".venv", "build"]
