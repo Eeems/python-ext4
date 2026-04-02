@@ -1,4 +1,3 @@
-# pyright: reportImportCycles=false
 from ctypes import (
     c_ubyte,
     c_uint8,

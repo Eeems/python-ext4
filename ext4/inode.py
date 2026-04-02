@@ -1,4 +1,3 @@
-# pyright: reportImportCycles=false
 from __future__ import annotations
 
 import errno
@@ -482,8 +481,17 @@ class File(Inode):
 
 
 class SymbolicLink(Inode):
+    @property
+    def is_fast_symlink(self) -> bool:
+        i_blocks_lo = assert_cast(self.i_blocks_lo, int)  # pyright: ignore[reportAny]
+        return i_blocks_lo == 0 and not self.is_inline
+
     def readlink(self) -> bytes:
-        return self._open().read()
+        if not self.is_fast_symlink:
+            return self._open().read()
+
+        _ = self.volume.seek(self.offset + Inode.i_block.offset)
+        return self.volume.read(self.i_size)
 
 
 class Directory(Inode):

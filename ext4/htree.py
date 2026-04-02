@@ -1,4 +1,3 @@
-# pyright: reportImportCycles=false
 import warnings
 from collections.abc import Generator
 from ctypes import (

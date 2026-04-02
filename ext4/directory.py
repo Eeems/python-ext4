@@ -1,4 +1,3 @@
-# pyright: reportImportCycles=false
 from ctypes import (
     addressof,
     c_char,
