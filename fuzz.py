@@ -1,3 +1,4 @@
+import errno
 import os
 import sys
 from typing import final
@@ -385,6 +386,12 @@ def TestOneInput(data: bytes) -> None:  # noqa: PLR0912
 
     except InodeError:
         return
+
+    except OSError as e:
+        if e.errno == errno.EINVAL:
+            return
+
+        raise
 
     _ = vol.superblock
     for bd in vol.group_descriptors:
