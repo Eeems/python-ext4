@@ -38,6 +38,11 @@ sdist: dist/${PACKAGE}-${VERSION}.tar.gz
 .PHONY: wheel
 wheel: dist/${PACKAGE}-${VERSION}-py3-none-any.whl
 
+.PHONY: native-wheel
+native-wheel:${VENV_BIN_ACTIVATE} dist $(OBJ)
+	. ${VENV_BIN_ACTIVATE}; \
+	python -m build --wheel
+
 dist:
 	mkdir -p dist
 
@@ -47,7 +52,7 @@ dist/${PACKAGE}-${VERSION}.tar.gz: ${VENV_BIN_ACTIVATE} dist $(OBJ)
 
 dist/${PACKAGE}-${VERSION}-py3-none-any.whl: ${VENV_BIN_ACTIVATE} dist $(OBJ)
 	. ${VENV_BIN_ACTIVATE}; \
-	python -m build --wheel
+	python -m build --wheel --config-setting=build_with_nuitka=false
 
 ${VENV_BIN_ACTIVATE}: pyproject.toml
 	@echo "Setting up development virtual env in .venv"
