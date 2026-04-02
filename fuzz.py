@@ -19,14 +19,46 @@ warnings.filterwarnings("ignore")
 EXPECTED_DATA_SIZE = 145
 
 
-seed_file = os.path.join("corpus", "seed", "seed0")
-if not os.path.exists(seed_file) or os.stat(seed_file).st_size != EXPECTED_DATA_SIZE:
-    os.makedirs(os.path.dirname(seed_file), exist_ok=True)
-    with open(seed_file, "wb") as f:
-        _ = f.write(b"\x00" * EXPECTED_DATA_SIZE)
+def custom_mutator(data: bytes, _max_size: int, _seed: int) -> bytes:
+    if len(data) >= EXPECTED_DATA_SIZE:
+        return data[:EXPECTED_DATA_SIZE]
+
+    return data + b"\x00" * (EXPECTED_DATA_SIZE - len(data))
+
+
+for i, byte_val in enumerate(
+    [
+        0,  # min values
+        1,  # block=1
+        2,  # block=2
+        3,  # inode=1
+        6,  # varied
+        8,  # block=2, higher values
+        10,  # block=1, higher
+        12,  # varied
+        16,  # img=48
+        18,  # img=50
+        24,  # img=56
+        32,  # img=64
+        48,  # large img
+        64,  # wrap-around
+        128,  # mid-range
+        255,  # max byte - different pattern
+    ]
+):
+    seed_path = os.path.join("corpus", "seed", f"seed{i}")
+    if os.path.exists(seed_path):
+        continue
+
+    os.makedirs(os.path.dirname(seed_path), exist_ok=True)
+    data = bytes([byte_val] * EXPECTED_DATA_SIZE)
+    data = custom_mutator(data, EXPECTED_DATA_SIZE, i)
+    with open(seed_path, "wb") as f:
+        _ = f.write(data)
 
 with atheris.instrument_imports():  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
     from ext4 import (
+        EXT4_INO,
         ChecksumError,
         Directory,
         File,
@@ -35,9 +67,7 @@ with atheris.instrument_imports():  # pyright: ignore[reportUnknownMemberType, r
     )
 
 
-def TestOneInput(data: bytes) -> None:
-    fdp = atheris.FuzzedDataProvider(data)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
-
+def mkfs(fdp: atheris.FuzzedDataProvider, imgdir: str) -> str:
     if TYPE_CHECKING:
         fdp.ConsumeIntInRange = cast(Callable[[int, int], int], fdp.ConsumeIntInRange)
         fdp.ConsumeInt = cast(Callable[[int], int], fdp.ConsumeInt)
@@ -54,22 +84,21 @@ def TestOneInput(data: bytes) -> None:
     max_file_size: int = fdp.ConsumeIntInRange(1, 64)
     rng_seed: int = fdp.ConsumeInt(1024)
     rng = random.Random(rng_seed)  # noqa: S311
-
-    FEATURES = [
-        "extent",
-        "dir_index",
-        "flex_bg",
-        "sparse_super",
-        "64bit",
-        "metadata_csum",
-        "huge_file",
-        "orphan_file",
+    features = [
+        f
+        for f in [
+            "extent",
+            "dir_index",
+            "flex_bg",
+            "sparse_super",
+            "64bit",
+            "metadata_csum",
+            "huge_file",
+            "orphan_file",
+        ]
+        if fdp.PickValueInList([True, False])
     ]
-    features = [f for f in FEATURES if fdp.PickValueInList([True, False])]
-
-    with tempfile.TemporaryDirectory(prefix="ext4_fuzz_") as tmpdir:
-        rootdir = os.path.join(tmpdir, "root")
-        os.mkdir(rootdir)
+    with tempfile.TemporaryDirectory(prefix="ext4_fuzz_") as rootdir:
         dirs: list[str] = [rootdir]
         for _ in range(num_dirs):
             parent = rng.choice(dirs)
@@ -123,7 +152,7 @@ def TestOneInput(data: bytes) -> None:
                     value = rng.randbytes(rng.randint(8, 64))
                     os.setxattr(path, key, value)
 
-        img_path = os.path.join(tmpdir, "image.img")
+        img_path = os.path.join(imgdir, "image.img")
         cmd = [
             "mkfs.ext4",
             "-d",
@@ -136,12 +165,22 @@ def TestOneInput(data: bytes) -> None:
             img_path,
             f"{img_size}M",
         ]
-        result = subprocess.run(cmd, check=False, capture_output=True)  # noqa: S607,S603
-        if result.returncode != 0:
-            raise subprocess.CalledProcessError(
-                result.returncode, cmd, result.stdout, result.stderr
-            )
+        mkfs_proc = subprocess.run(cmd, check=False, capture_output=True, text=True)  # noqa: S607,S603
 
+    if mkfs_proc.returncode != 0:
+        print(mkfs_proc.stdout)
+        print(mkfs_proc.stderr)
+        raise subprocess.CalledProcessError(
+            mkfs_proc.returncode, cmd, mkfs_proc.stdout, mkfs_proc.stderr
+        )
+
+    return img_path
+
+
+def TestOneInput(data: bytes) -> None:
+    fdp = atheris.FuzzedDataProvider(data)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
+    with tempfile.TemporaryDirectory(prefix="ext4_fuzz_") as imgdir:
+        img_path = mkfs(fdp, imgdir)  # pyright: ignore[reportUnknownArgumentType]
         try:
             with open(img_path, "rb") as f:
                 volume = Volume(
@@ -165,6 +204,9 @@ def TestOneInput(data: bytes) -> None:
                     _ = dirent.name_bytes
 
                 for inode in volume.inodes:
+                    if inode.i_no <= EXT4_INO.BAD:
+                        continue
+
                     try:
                         inode.validate()
 
@@ -175,7 +217,9 @@ def TestOneInput(data: bytes) -> None:
                     _ = inode.i_size
                     _ = inode.i_file_acl
                     if isinstance(inode, File):
-                        _ = inode.open().read()
+                        reader = inode.open()
+                        while reader.read(1):
+                            continue
 
                     elif isinstance(inode, SymbolicLink):
                         _ = inode.readlink()
@@ -220,13 +264,6 @@ def TestOneInput(data: bytes) -> None:
         finally:
             if os.path.exists(img_path):
                 os.remove(img_path)
-
-
-def custom_mutator(data: bytes, _max_size: int, _seed: int) -> bytes:
-    if len(data) >= EXPECTED_DATA_SIZE:
-        return data[:EXPECTED_DATA_SIZE]
-
-    return data + b"\x00" * (EXPECTED_DATA_SIZE - len(data))
 
 
 argv = [

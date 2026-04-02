@@ -164,3 +164,4 @@ cython_debug/
 crash-*
 timeout-*
 corpus/seed/
+oom-*
