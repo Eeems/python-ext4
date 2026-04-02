@@ -29,7 +29,6 @@ with atheris.instrument_imports():  # pyright: ignore[reportUnknownMemberType, r
     from ext4 import (
         ChecksumError,
         Directory,
-        ExtendedAttributeError,
         File,
         SymbolicLink,
         Volume,
