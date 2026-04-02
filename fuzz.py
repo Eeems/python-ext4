@@ -176,7 +176,7 @@ def TestOneInput(data: bytes) -> None:
                         for _ in inode.opendir():
                             pass
 
-                    while next(inode.xattrs, None) is not None:
+                    for _ in inode.xattrs:
                         pass
 
                 _ = volume.bad_blocks
