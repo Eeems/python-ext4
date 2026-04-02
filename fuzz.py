@@ -1,9 +1,12 @@
 import errno
 import os
 import sys
+import warnings
 from typing import final
 
 import atheris
+
+warnings.filterwarnings("ignore")
 
 MIN_DATA_SIZE = 128 * 1024  # 128KB
 
@@ -389,6 +392,9 @@ def TestOneInput(data: bytes) -> None:  # noqa: PLR0912
 
     except OSError as e:
         if e.errno == errno.EINVAL:
+            return
+
+        if "Short read for" in str(e):
             return
 
         raise
