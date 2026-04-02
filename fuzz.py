@@ -7,6 +7,7 @@ import tempfile
 import warnings
 from collections.abc import Callable
 from typing import (
+    TYPE_CHECKING,
     Any,
     cast,
 )
@@ -36,9 +37,10 @@ with atheris.instrument_imports():  # pyright: ignore[reportUnknownMemberType, r
 def TestOneInput(data: bytes) -> None:
     fdp = atheris.FuzzedDataProvider(data)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
 
-    fdp.ConsumeIntInRange = cast(Callable[[int, int], int], fdp.ConsumeIntInRange)
-    fdp.ConsumeInt = cast(Callable[[int], int], fdp.ConsumeInt)
-    fdp.PickValueInList = cast(Callable[[list[Any]], int], fdp.PickValueInList)  # pyright: ignore[reportExplicitAny]
+    if TYPE_CHECKING:
+        fdp.ConsumeIntInRange = cast(Callable[[int, int], int], fdp.ConsumeIntInRange)
+        fdp.ConsumeInt = cast(Callable[[int], int], fdp.ConsumeInt)
+        fdp.PickValueInList = cast(Callable[[list[Any]], int], fdp.PickValueInList)  # pyright: ignore[reportExplicitAny]
 
     img_size: int = fdp.ConsumeIntInRange(32, 64)
     block_size: int = [1024, 2048, 4096][fdp.ConsumeIntInRange(0, 2)]
