@@ -168,7 +168,7 @@ jobs:
           - armv7l
         libc:
           - glibc
-          - musl
+          # - musl
     steps:
       - name: Checkout the Git repository
         uses: actions/checkout@v6
