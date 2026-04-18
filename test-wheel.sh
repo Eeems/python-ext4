@@ -5,6 +5,10 @@ arch=${arch:-x86_64}
 python=${python:-3.11}
 
 wheel="$(find wheelhouse -name "*_${arch}.whl" | head -n1)"
+if [[ -z "$wheel" ]]; then
+  echo "No wheel found for architecture $arch"
+  exit 1
+fi
 script=$(
   cat <<EOF
 cd /src;
