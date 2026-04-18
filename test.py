@@ -189,7 +189,10 @@ with open(img_file, "rb") as f:
         htree = volume.root.htree
         _assert("htree is not None")
         if htree is not None:
-            _assert("isinstance(htree.dot, ext4.DotDirectoryEntry2)", lambda: htree.dot)  # pyright: ignore[reportOptionalMemberAccess, reportAny]
+            _assert(
+                "isinstance(htree.dot, ext4.DotDirectoryEntry2)",
+                lambda: htree.dot,  # pyright: ignore[reportOptionalMemberAccess, reportAny]
+            )
             _assert(
                 "isinstance(htree.dotdot, ext4.DotDirectoryEntry2)",
                 lambda: htree.dotdot,  # pyright: ignore[reportOptionalMemberAccess, reportAny]
@@ -208,7 +211,11 @@ with open(img_file, "rb") as f:
 
             dx_root_info = htree.dx_root_info  # pyright: ignore[reportAny]
             _assert(
-                "isinstance(dx_root_info.hash_version, ext4.DX_HASH)",
+                "isinstance(dx_root_info.hash_version, int)",
+                lambda: dx_root_info.hash_version,  # pyright: ignore[reportAny]
+            )
+            _assert(
+                "ext4.DX_HASH(dx_root_info.hash_version)",
                 lambda: dx_root_info.hash_version,  # pyright: ignore[reportAny]
             )
             _assert("dx_root_info.info_length == 8", lambda: dx_root_info.info_length)  # pyright: ignore[reportAny]

@@ -80,7 +80,7 @@ class DXRootInfo(LittleEndianStructure):
     # _anonymous_ = ("reserved_zero")
     _fields_ = [
         ("reserved_zero", c_uint32),
-        ("hash_version", DX_HASH),
+        ("hash_version", DX_HASH.basetype),
         ("info_length", c_uint8),
         ("indirect_levels", c_uint8),
         ("unused_flags", c_uint8),

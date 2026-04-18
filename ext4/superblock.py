@@ -59,21 +59,21 @@ class Superblock(Ext4Struct):
         ("s_mnt_count", c_uint16),
         ("s_max_mnt_count", c_uint16),
         ("s_magic", c_uint16),  # 0xEF53
-        ("s_state", EXT4_FS),
-        ("s_errors", EXT4_ERRORS),
+        ("s_state", EXT4_FS.basetype),
+        ("s_errors", EXT4_ERRORS.basetype),
         ("s_minor_rev_level", c_uint16),
         ("s_lastcheck", c_uint32),
         ("s_checkinterval", c_uint32),
-        ("s_creator_os", EXT4_OS),
-        ("s_rev_level", EXT4_REV),
+        ("s_creator_os", EXT4_OS.basetype),
+        ("s_rev_level", EXT4_REV.basetype),
         ("s_def_resuid", c_uint16),
         ("s_def_resgid", c_uint16),
         ("s_first_ino", c_uint32),
         ("s_inode_size", c_uint16),
         ("s_block_group_nr", c_uint16),
-        ("s_feature_compat", EXT4_FEATURE_COMPAT),
-        ("s_feature_incompat", EXT4_FEATURE_INCOMPAT),
-        ("s_feature_ro_compat", EXT4_FEATURE_RO_COMPAT),
+        ("s_feature_compat", EXT4_FEATURE_COMPAT.basetype),
+        ("s_feature_incompat", EXT4_FEATURE_INCOMPAT.basetype),
+        ("s_feature_ro_compat", EXT4_FEATURE_RO_COMPAT.basetype),
         ("s_uuid", c_uint8 * 16),
         ("s_volume_name", c_ubyte * 16),
         ("s_last_mounted", c_ubyte * 64),
@@ -86,10 +86,10 @@ class Superblock(Ext4Struct):
         ("s_journal_dev", c_uint32),
         ("s_last_orphan", c_uint32),
         ("s_hash_seed", c_uint32 * 4),
-        ("s_def_hash_version", DX_HASH),
+        ("s_def_hash_version", DX_HASH.basetype),
         ("s_jnl_backup_type", c_uint8),
         ("s_desc_size", c_uint16),
-        ("s_default_mount_opts", EXT4_DEFM),
+        ("s_default_mount_opts", EXT4_DEFM.basetype),
         ("s_first_meta_bg", c_uint32),
         ("s_mkfs_time", c_uint32),
         ("s_jnl_blocks", c_uint32 * 17),
@@ -98,13 +98,13 @@ class Superblock(Ext4Struct):
         ("s_free_blocks_count_hi", c_uint32),
         ("s_min_extra_isize", c_uint16),
         ("s_want_extra_isize", c_uint16),
-        ("s_flags", EXT2_FLAGS),
+        ("s_flags", EXT2_FLAGS.basetype),
         ("s_raid_stride", c_uint16),
         ("s_mmp_interval", c_uint16),
         ("s_mmp_block", c_uint64),
         ("s_raid_stripe_width", c_uint32),
         ("s_log_groups_per_flex", c_uint8),
-        ("s_checksum_type", EXT4_CHKSUM),
+        ("s_checksum_type", EXT4_CHKSUM.basetype),
         ("s_reserved_pad", c_uint16),
         ("s_kbytes_written", c_uint64),
         ("s_snapshot_inum", c_uint32),
@@ -122,12 +122,12 @@ class Superblock(Ext4Struct):
         ("s_last_error_line", c_uint32),
         ("s_last_error_block", c_uint64),
         ("s_last_error_func", c_uint8 * 32),
-        ("s_mount_opts", EXT4_MOUNT * 64),  # pyright: ignore[reportOperatorIssue]
+        ("s_mount_opts", EXT4_MOUNT.basetype * 64),  # pyright: ignore[reportOperatorIssue]
         ("s_usr_quota_inum", c_uint32),
         ("s_grp_quota_inum", c_uint32),
         ("s_overhead_blocks", c_uint32),
         ("s_backup_bgs", c_uint32 * 2),
-        ("s_encrypt_algos", FS_ENCRYPTION_MODE * 4),  # pyright: ignore[reportOperatorIssue]
+        ("s_encrypt_algos", FS_ENCRYPTION_MODE.basetype * 4),  # pyright: ignore[reportOperatorIssue]
         ("s_encrypt_pw_salt", c_uint8 * 16),
         ("s_lpf_ino", c_uint32),
         ("s_prj_quota_inum", c_uint32),
@@ -206,21 +206,15 @@ class Superblock(Ext4Struct):
 
     @property
     def feature_incompat(self) -> EXT4_FEATURE_INCOMPAT:
-        s_feature_incompat = assert_cast(self.s_feature_incompat, EXT4_FEATURE_INCOMPAT)  # pyright: ignore[reportAny]
-        return s_feature_incompat
+        return EXT4_FEATURE_INCOMPAT(self.s_feature_incompat)  # pyright: ignore[reportAny]
 
     @property
     def feature_compat(self) -> EXT4_FEATURE_COMPAT:
-        s_feature_compat = assert_cast(self.s_feature_compat, EXT4_FEATURE_COMPAT)  # pyright: ignore[reportAny]
-        return s_feature_compat
+        return EXT4_FEATURE_COMPAT(self.s_feature_compat)  # pyright: ignore[reportAny]
 
     @property
     def feature_ro_compat(self) -> EXT4_FEATURE_RO_COMPAT:
-        s_feature_ro_compat = assert_cast(
-            self.s_feature_ro_compat,  # pyright: ignore[reportAny]
-            EXT4_FEATURE_RO_COMPAT,
-        )
-        return s_feature_ro_compat
+        return EXT4_FEATURE_RO_COMPAT(self.s_feature_ro_compat)  # pyright: ignore[reportAny]
 
     @property
     def seed(self) -> int:
