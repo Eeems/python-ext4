@@ -6,8 +6,8 @@ import os
 import warnings
 from collections.abc import Generator
 from ctypes import (
+    BigEndianUnion,
     LittleEndianStructure,
-    Union,
     c_uint16,
     c_uint32,
     sizeof,
@@ -103,7 +103,7 @@ class Masix1(LittleEndianStructure):
 
 
 @final
-class Osd1(Union):
+class Osd1(BigEndianUnion):
     _pack_ = 1
     _fields_ = [
         ("linux1", Linux1),
@@ -151,7 +151,7 @@ class Masix2(LittleEndianStructure):
 
 
 @final
-class Osd2(Union):
+class Osd2(BigEndianUnion):
     _pack_ = 1
     _fields_ = [
         ("linux2", Linux2),
