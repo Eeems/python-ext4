@@ -15,7 +15,6 @@ from ctypes import (
 from typing import (
     TYPE_CHECKING,
     Any,
-    cast,
     final,
 )
 
@@ -197,14 +196,8 @@ class Inode(Ext4Struct):
     @classmethod
     def get_file_type(cls, volume: Volume, offset: int) -> EXT4_FT:
         _ = volume.seek(offset + Inode.i_mode.offset)
-        file_type = cast(
-            MODE,
-            Inode.field_type("i_mode")
-            .from_buffer_copy(  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportOptionalMemberAccess]
-                volume.read(Inode.i_mode.size)
-            )
-            .value
-            & 0xF000,
+        file_type = MODE(
+            int.from_bytes(volume.read(Inode.i_mode.size), "little") & 0xF000
         )
         match file_type:
             case MODE.IFIFO:
