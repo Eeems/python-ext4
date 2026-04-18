@@ -42,7 +42,7 @@ class Superblock(Ext4Struct):
     #     "s_reserved_pad",
     #     "s_reserved",
     # )
-    _fields_ = [  # pyright: ignore[reportUnknownVariableType]
+    _fields_ = [
         ("s_inodes_count", c_uint32),
         ("s_blocks_count_lo", c_uint32),
         ("s_r_blocks_count_lo", c_uint32),
@@ -122,12 +122,12 @@ class Superblock(Ext4Struct):
         ("s_last_error_line", c_uint32),
         ("s_last_error_block", c_uint64),
         ("s_last_error_func", c_uint8 * 32),
-        ("s_mount_opts", EXT4_MOUNT.basetype * 64),  # pyright: ignore[reportOperatorIssue]
+        ("s_mount_opts", EXT4_MOUNT.basetype * 64),
         ("s_usr_quota_inum", c_uint32),
         ("s_grp_quota_inum", c_uint32),
         ("s_overhead_blocks", c_uint32),
         ("s_backup_bgs", c_uint32 * 2),
-        ("s_encrypt_algos", FS_ENCRYPTION_MODE.basetype * 4),  # pyright: ignore[reportOperatorIssue]
+        ("s_encrypt_algos", FS_ENCRYPTION_MODE.basetype * 4),
         ("s_encrypt_pw_salt", c_uint8 * 16),
         ("s_lpf_ino", c_uint32),
         ("s_prj_quota_inum", c_uint32),
