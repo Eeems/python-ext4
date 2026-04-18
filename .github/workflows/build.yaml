@@ -16,7 +16,6 @@ jobs:
       fail-fast: false
       matrix:
         python: &python-versions
-          - "3.10"
           - "3.11"
           - "3.12"
           - "3.13"
@@ -93,7 +92,6 @@ jobs:
       fail-fast: false
       matrix:
         python:
-          #- "3.10"  # atheris appears to break
           - "3.11"
           - "3.12"
           - "3.13"
