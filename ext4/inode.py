@@ -7,7 +7,7 @@ import warnings
 from collections.abc import Generator
 from ctypes import (
     LittleEndianStructure,
-    Union,
+    LittleEndianUnion,
     c_uint16,
     c_uint32,
     sizeof,
@@ -15,7 +15,6 @@ from ctypes import (
 from typing import (
     TYPE_CHECKING,
     Any,
-    cast,
     final,
 )
 
@@ -103,7 +102,7 @@ class Masix1(LittleEndianStructure):
 
 
 @final
-class Osd1(Union):
+class Osd1(LittleEndianUnion):
     _pack_ = 1
     _fields_ = [
         ("linux1", Linux1),
@@ -151,7 +150,7 @@ class Masix2(LittleEndianStructure):
 
 
 @final
-class Osd2(Union):
+class Osd2(LittleEndianUnion):
     _pack_ = 1
     _fields_ = [
         ("linux2", Linux2),
@@ -165,7 +164,7 @@ class Inode(Ext4Struct):
     EXT2_GOOD_OLD_INODE_SIZE: int = 128
     _pack_ = 1  # pyright: ignore[reportUnannotatedClassAttribute]
     _fields_ = [  # pyright: ignore[reportUnannotatedClassAttribute]
-        ("i_mode", MODE),
+        ("i_mode", MODE.basetype),
         ("i_uid", c_uint16),
         ("i_size_lo", c_uint32),
         ("i_atime", c_uint32),
@@ -175,7 +174,7 @@ class Inode(Ext4Struct):
         ("i_gid", c_uint16),
         ("i_links_count", c_uint16),
         ("i_blocks_lo", c_uint32),
-        ("i_flags", EXT4_FL),
+        ("i_flags", EXT4_FL.basetype),
         ("osd1", Osd1),
         ("i_block", c_uint32 * 15),
         ("i_generation", c_uint32),
@@ -197,12 +196,8 @@ class Inode(Ext4Struct):
     @classmethod
     def get_file_type(cls, volume: Volume, offset: int) -> EXT4_FT:
         _ = volume.seek(offset + Inode.i_mode.offset)
-        file_type = cast(
-            MODE,
-            Inode.field_type("i_mode").from_buffer_copy(  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportOptionalMemberAccess]
-                volume.read(Inode.i_mode.size)
-            )
-            & 0xF000,
+        file_type = MODE(
+            int.from_bytes(volume.read(Inode.i_mode.size), "little") & 0xF000
         )
         match file_type:
             case MODE.IFIFO:
@@ -321,7 +316,7 @@ class Inode(Ext4Struct):
 
     @Ext4Struct.checksum.getter
     def checksum(self) -> int | None:
-        s_creator_os: EXT4_OS = assert_cast(self.superblock.s_creator_os, EXT4_OS)  # pyright: ignore[reportAny]
+        s_creator_os: EXT4_OS = EXT4_OS(self.superblock.s_creator_os)  # pyright: ignore[reportAny]
         if s_creator_os != EXT4_OS.LINUX:
             return None
 
@@ -358,7 +353,7 @@ class Inode(Ext4Struct):
 
     @Ext4Struct.expected_checksum.getter
     def expected_checksum(self) -> int | None:
-        s_creator_os = assert_cast(self.superblock.s_creator_os, EXT4_OS)  # pyright: ignore[reportAny]
+        s_creator_os = EXT4_OS(self.superblock.s_creator_os)  # pyright: ignore[reportAny]
         if s_creator_os != EXT4_OS.LINUX:
             return None
 
@@ -378,7 +373,7 @@ class Inode(Ext4Struct):
             self.tree.validate()
 
     def has_flag(self, flag: EXT4_FL | int) -> bool:
-        i_flags = assert_cast(self.i_flags, EXT4_FL)  # pyright: ignore[reportAny]
+        i_flags = EXT4_FL(self.i_flags)  # pyright: ignore[reportAny]
         return (i_flags & flag) != 0
 
     @property
@@ -610,7 +605,7 @@ class Directory(Inode):
     ) -> Generator[tuple[DirectoryEntry | DirectoryEntry2, EXT4_FT], Any, None]:  # pyright: ignore[reportExplicitAny]
         for dirent in self._opendir():
             if isinstance(dirent, DirectoryEntry2):
-                file_type = assert_cast(dirent.file_type, EXT4_FT)  # pyright: ignore[reportAny]
+                file_type = EXT4_FT(dirent.file_type)  # pyright: ignore[reportAny]
                 if file_type == EXT4_FT.DIR_CSUM:
                     continue
 

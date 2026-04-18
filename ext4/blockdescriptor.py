@@ -30,7 +30,7 @@ class BlockDescriptor(Ext4Struct):
         ("bg_free_blocks_count_lo", c_uint16),
         ("bg_free_inodes_count_lo", c_uint16),
         ("bg_used_dirs_count_lo", c_uint16),
-        ("bg_flags", EXT4_BG),
+        ("bg_flags", EXT4_BG.basetype),
         ("bg_exclude_bitmap_lo", c_uint32),
         ("bg_block_bitmap_csum_lo", c_uint16),
         ("bg_inode_bitmap_csum_lo", c_uint16),

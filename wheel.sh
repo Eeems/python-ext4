@@ -23,6 +23,8 @@ if [[ "$libc" == "musl" ]]; then
   image="musllinux_1_2_$arch"
 elif [[ "$arch" == "armv7l" ]]; then
   image="manylinux_2_35_$arch"
+elif [[ "$arch" == "riscv64" ]]; then
+  image="manylinux_2_39_$arch"
 else
   image="manylinux_2_34_$arch"
 fi

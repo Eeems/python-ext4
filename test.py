@@ -54,6 +54,20 @@ def _assert(source: str, debug: Callable[[], Any] | None = None) -> None:  # pyr
         print(f"  {debug()}", file=sys.stderr)
 
 
+def _not_raises(source: str, debug: Callable[[], Any] | None = None) -> None:  # pyright: ignore[reportExplicitAny]
+    global FAILED  # noqa: PLW0603
+    print(f"check {source} does not raise exception: ", end="")
+    try:
+        _ = eval(source)  # noqa: S307  # pyright: ignore[reportAny]
+        print("pass")
+
+    except Exception:
+        FAILED = True  # pyright: ignore[reportConstantRedefinition]
+        print("fail")
+        if debug is not None:
+            print(f"  {debug()}", file=sys.stderr)
+
+
 def test_magic_error(f: BufferedReader) -> None:
     global FAILED  # noqa: PLW0603
     try:
@@ -189,7 +203,10 @@ with open(img_file, "rb") as f:
         htree = volume.root.htree
         _assert("htree is not None")
         if htree is not None:
-            _assert("isinstance(htree.dot, ext4.DotDirectoryEntry2)", lambda: htree.dot)  # pyright: ignore[reportOptionalMemberAccess, reportAny]
+            _assert(
+                "isinstance(htree.dot, ext4.DotDirectoryEntry2)",
+                lambda: htree.dot,  # pyright: ignore[reportOptionalMemberAccess, reportAny]
+            )
             _assert(
                 "isinstance(htree.dotdot, ext4.DotDirectoryEntry2)",
                 lambda: htree.dotdot,  # pyright: ignore[reportOptionalMemberAccess, reportAny]
@@ -208,7 +225,11 @@ with open(img_file, "rb") as f:
 
             dx_root_info = htree.dx_root_info  # pyright: ignore[reportAny]
             _assert(
-                "isinstance(dx_root_info.hash_version, ext4.DX_HASH)",
+                "isinstance(dx_root_info.hash_version, int)",
+                lambda: dx_root_info.hash_version,  # pyright: ignore[reportAny]
+            )
+            _not_raises(
+                "ext4.DX_HASH(dx_root_info.hash_version)",
                 lambda: dx_root_info.hash_version,  # pyright: ignore[reportAny]
             )
             _assert("dx_root_info.info_length == 8", lambda: dx_root_info.info_length)  # pyright: ignore[reportAny]

@@ -48,6 +48,7 @@ def TypedEnumerationType(_type: type["SimpleCData"]):  # noqa: ANN201
 def TypedCEnumeration(_type: type["SimpleCData"]):  # noqa: ANN201
     class CEnumeration(_type, metaclass=TypedEnumerationType(_type)):  # pyright: ignore[reportGeneralTypeIssues, reportUntypedBaseClass] # noqa: ANN201,PLW1641,PLW1641
         _members_: dict[str, Any] = {}  # pyright: ignore[reportExplicitAny]
+        basetype: type["SimpleCData"] = _type
 
         @override
         def __repr__(self) -> str:

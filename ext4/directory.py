@@ -73,13 +73,13 @@ class DirectoryEntry2(DirectoryEntryBase):
         ("inode", c_uint32),
         ("rec_len", c_uint16),
         ("name_len", c_uint8),
-        ("file_type", EXT4_FT),
+        ("file_type", EXT4_FT.basetype),
         ("name", c_char * EXT4_NAME_LEN),
     ]
 
     @DirectoryEntryBase.is_fake_entry.getter
     def is_fake_entry(self) -> bool:
-        file_type = assert_cast(self.file_type, EXT4_FT)  # pyright: ignore[reportAny]
+        file_type = EXT4_FT(self.file_type)  # pyright: ignore[reportAny]
         return super().is_fake_entry or file_type == EXT4_FT.DIR_CSUM
 
 
