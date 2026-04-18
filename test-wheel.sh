@@ -35,7 +35,11 @@ i686)
   echo "WARNING: Unable to test i686 as there is no suitable python image. Skipping without error for now."
   exit 0
   ;;
-ppc64le)
+riscv64)
+  if [[ "$libc" == "glibc" ]]; then
+    echo "WARNING: Unable to test riscv64 as the python image doesn't support manylinux. Skipping without error for now."
+    exit 0
+  fi
   platform="linux/${arch}"
   ;;
 armv7l)
