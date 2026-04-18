@@ -68,14 +68,14 @@ class ExtendedAttributeIBodyHeader(ExtendedAttributeBase):
         i = 0
         while i < self.data_size:
             entry = ExtendedAttributeEntry(self.inode, offset + i, self.data_size - i)
-            e_name_len = assert_cast(entry.e_name_len, int)
-            e_name_index = assert_cast(entry.e_name_index, int)
-            e_value_offs = assert_cast(entry.e_value_offs, int)
+            e_name_len = assert_cast(entry.e_name_len, int)  # pyright: ignore[reportAny]
+            e_name_index = assert_cast(entry.e_name_index, int)  # pyright: ignore[reportAny]
+            e_value_offs = assert_cast(entry.e_value_offs, int)  # pyright: ignore[reportAny]
             if (e_name_len | e_name_index | e_value_offs | entry.value_inum) == 0:
                 break
 
             value: bytes
-            e_value_size = assert_cast(entry.e_value_size, int)
+            e_value_size = assert_cast(entry.e_value_size, int)  # pyright: ignore[reportAny]
             if entry.value_inum != 0:
                 inode = self.volume.inodes[entry.value_inum]
                 if not inode.has_flag(EXT4_FL.EA_INODE):
