@@ -216,11 +216,15 @@ jobs:
         with:
           pattern: pip-*
           merge-multiple: true
+          path: artifacts
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: ${{ steps.download.outputs.download-path }}
           skip-existing: true
+          print-hash: "false"
+          print_hash: "false"
+          verbose: "false"
   release:
     name: Add pip to release
     if: github.repository == 'Eeems/python-ext4' && github.event_name == 'release' && startsWith(github.ref, 'refs/tags')
@@ -237,6 +241,13 @@ jobs:
         with:
           pattern: pip-*
           merge-multiple: true
+          path: artifacts
+      - name: Download pip packages
+        uses: actions/download-artifact@v8
+        with:
+          pattern: test.ext4
+          merge-multiple: true
+          path: artifacts
       - name: Upload to release
         run: find . -type f | xargs -rI {} gh release upload "$TAG" {} --clobber
         env:
