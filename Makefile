@@ -40,6 +40,3 @@ fuzz: ${VENV_BIN_ACTIVATE}
 	python fuzz.py \
 	  -rss_limit_mb=2048 \
 	  -max_total_time=$(FUZZ_TIMEOUT)
-
-.PHONY: all
-all: release

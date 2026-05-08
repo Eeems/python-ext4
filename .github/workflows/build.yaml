@@ -6,7 +6,7 @@ on:
   pull_request:
   workflow_dispatch:
   release:
-    types: [ released ]
+    types: [released]
 permissions: read-all
 jobs:
   lint:
@@ -239,12 +239,6 @@ jobs:
           pattern: pip-*
           merge-multiple: true
           path: dist
-      - name: Download executables
-        uses: actions/download-artifact@v8
-        with:
-          pattern: executable-*
-          merge-multiple: true
-          path: ${{ steps.download.outputs.download-path }}
       - name: Upload to release
         run: find . -type f | xargs -rI {} gh release upload "$TAG" {} --clobber
         env:
