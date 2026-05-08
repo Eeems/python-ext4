@@ -22,6 +22,7 @@ classifiers = [
     "Topic :: System :: Filesystems",
     "Topic :: Utilities",
 ]
+license = "MIT"
 dynamic = ["readme"]
 dependencies = [
     "cachetools==6.0.0",
@@ -37,9 +38,7 @@ dev = [
     'basedpyright',
 ]
 test = []
-fuzz = [
-    "atheris",
-]
+fuzz = ["atheris"]
 
 [project.urls]
 Homepage = "https://github.com/Eeems/python-ext4"
@@ -89,3 +88,6 @@ ignore = [
 exclude = [".venv", "build"]
 reportMissingTypeStubs = false
 reportImportCycles = false
+
+[tool.emake]
+test = ["./test.sh"]

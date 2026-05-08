@@ -10,7 +10,7 @@ on:
 permissions: read-all
 jobs:
   lint:
-    name: Lint code
+    name: Lint codebase
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -23,14 +23,16 @@ jobs:
     steps:
       - name: Checkout the Git repository
         uses: actions/checkout@v6
-      - name: Setup Python
-        uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
-          cache: "pip"
-      - name: Lint code
-        shell: bash
-        run: make lint format
+          cache: pip
+      - &install-emake
+        name: Install emake
+        run: pip install emake
+      - name: Run lint
+        run: emake lint
+
   test-image:
     name: Generate test ext4 image
     runs-on: ubuntu-latest
@@ -57,10 +59,11 @@ jobs:
             test64.ext4.tmp
             test_htree.ext4
           if-no-files-found: error
+
   test:
-    name: Test on ${{ matrix.os }} python ${{ matrix.python }}
-    runs-on: ${{ matrix.os }}
-    needs: [ test-image ]
+    name: Test with python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    needs: test-image
     strategy:
       fail-fast: false
       matrix:
@@ -72,19 +75,19 @@ jobs:
     steps:
       - name: Checkout the Git repository
         uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - *install-emake
       - name: Download test.ext4
         uses: actions/download-artifact@v8
         with:
           name: test.ext4
           path: .
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python }}
-          cache: "pip"
-      - name: Run test
-        shell: bash
-        run: make test
+      - name: Run tests
+        run: emake test
+
   fuzz:
     name: Fuzz
     runs-on: ubuntu-latest
@@ -104,55 +107,50 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
           cache: "pip"
+      - *install-emake
       - name: Run test
         shell: bash
         run: make fuzz
+
   build-sdist:
-    name: Build pip package
+    name: Build sdist
+    needs: &build-needs
+      - lint
+      - test
     runs-on: ubuntu-latest
-    needs: [ test, lint ]
     steps:
       - name: Checkout the Git repository
         uses: actions/checkout@v6
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.11"
-          cache: "pip"
-      - name: Install build tool
-        run: pip install build
-      - name: Building package
-        run: make release
+      - *install-emake
+      - name: Building sdist
+        run: emake build --sdist
       - uses: actions/upload-artifact@v6
         with:
           name: pip-sdist
           path: dist/*
           if-no-files-found: error
+
   build-any-wheel:
     name: Build wheel
+    needs: *build-needs
     runs-on: ubuntu-latest
-    needs: [ test, lint ]
     steps:
       - name: Checkout the Git repository
         uses: actions/checkout@v6
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.11"
-          cache: "pip"
-      - name: Install build tool
-        run: pip install build
-      - name: Building package
-        run: make wheel
+      - *install-emake
+      - name: Building wheel
+        run: emake build --wheel
+      - name: Test wheel
+        run: emake test --wheel
       - uses: actions/upload-artifact@v6
         with:
           name: pip-wheel-none-any
           path: dist/*
           if-no-files-found: error
+
   build-wheel:
     name: Build wheel
-    # if: github.repository == 'Eeems/python-ext4' && github.event_name == 'release' && startsWith(github.ref, 'refs/tags')
-    needs: [ lint, test, test-image ]
+    needs: *build-needs
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -169,31 +167,34 @@ jobs:
         libc:
           - glibc
           - musl
+        exclude:
+          - arch: i686 # segfaults currently
+            python: "3.14"
+            libc: glibc
     steps:
       - name: Checkout the Git repository
         uses: actions/checkout@v6
+      - *install-emake
       - name: Building wheel
-        run: ./wheel.sh
-        env:
-          python: ${{ matrix.python }}
-          arch: ${{ matrix.arch }}
-          libc: ${{ matrix.libc }}
-      - name: Download test.ext4
-        uses: actions/download-artifact@v8
-        with:
-          name: test.ext4
-          path: .
+        run: |
+          emake build \
+            --native-wheel \
+            --arch ${{ matrix.arch }} \
+            --libc ${{ matrix.libc }} \
+            --python ${{ matrix.python }}
       - name: Testing wheel
-        run: ./test-wheel.sh
-        env:
-          python: ${{ matrix.python }}
-          arch: ${{ matrix.arch }}
-          libc: ${{ matrix.libc }}
+        run: |
+          emake test \
+            --wheel \
+            --arch ${{ matrix.arch }} \
+            --libc ${{ matrix.libc }} \
+            --python ${{ matrix.python }}
       - uses: actions/upload-artifact@v6
         with:
           name: pip-wheel-${{ matrix.python }}-${{ matrix.arch }}-${{ matrix.libc }}
-          path: wheelhouse/*
+          path: dist/*
           if-no-files-found: error
+
   publish:
     name: Publish to PyPi
     if: github.repository == 'Eeems/python-ext4' && github.event_name == 'release' && startsWith(github.ref, 'refs/tags')
@@ -201,11 +202,9 @@ jobs:
       - build-sdist
       - build-any-wheel
       - build-wheel
-      - fuzz
     runs-on: ubuntu-latest
     permissions:
       id-token: write
-      contents: write
     environment:
       name: pypi
       url: https://pypi.org/p/ext4
@@ -216,17 +215,15 @@ jobs:
         with:
           pattern: pip-*
           merge-multiple: true
-          path: artifacts
+          path: dist
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: ${{ steps.download.outputs.download-path }}
           skip-existing: true
-          print-hash: "false"
-          print_hash: "false"
-          verbose: "false"
+
   release:
-    name: Add pip to release
+    name: Add release artifacts
     if: github.repository == 'Eeems/python-ext4' && github.event_name == 'release' && startsWith(github.ref, 'refs/tags')
     needs: *release-needs
     runs-on: ubuntu-latest
@@ -235,19 +232,19 @@ jobs:
     steps:
       - name: Checkout the Git repository
         uses: actions/checkout@v6
-      - name: Download pip packages
+      - name: Download artifact
         id: download
         uses: actions/download-artifact@v8
         with:
           pattern: pip-*
           merge-multiple: true
-          path: artifacts
-      - name: Download pip packages
+          path: dist
+      - name: Download executables
         uses: actions/download-artifact@v8
         with:
-          pattern: test.ext4
+          pattern: executable-*
           merge-multiple: true
-          path: artifacts
+          path: ${{ steps.download.outputs.download-path }}
       - name: Upload to release
         run: find . -type f | xargs -rI {} gh release upload "$TAG" {} --clobber
         env:
