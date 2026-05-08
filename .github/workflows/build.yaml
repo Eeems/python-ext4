@@ -62,7 +62,7 @@ jobs:
 
   test:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     needs: test-image
     strategy:
       fail-fast: false
