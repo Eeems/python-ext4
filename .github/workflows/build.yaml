@@ -140,6 +140,11 @@ jobs:
       - *install-emake
       - name: Building wheel
         run: emake build --wheel
+      - name: Download test.ext4
+        uses: actions/download-artifact@v8
+        with:
+          name: test.ext4
+          path: .
       - name: Test wheel
         run: emake test --wheel
       - uses: actions/upload-artifact@v6
@@ -182,6 +187,11 @@ jobs:
             --arch ${{ matrix.arch }} \
             --libc ${{ matrix.libc }} \
             --python ${{ matrix.python }}
+      - name: Download test.ext4
+        uses: actions/download-artifact@v8
+        with:
+          name: test.ext4
+          path: .
       - name: Testing wheel
         run: |
           emake test \
