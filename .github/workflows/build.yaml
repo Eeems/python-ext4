@@ -86,6 +86,7 @@ jobs:
           name: test.ext4
           path: .
       - name: Run tests
+        shell: bash
         run: emake test
 
   fuzz:
