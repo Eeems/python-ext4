@@ -3,7 +3,9 @@ set -e
 if ! [ -d .venv ]; then
   python -m venv .venv
 fi
-emake requirements dev
+if [ -z "$EMAKE" ]; then
+  emake requirements dev
+fi
 if [ -f .venv/Scripts/activate ]; then
   source .venv/Scripts/activate
 elif [ -f .venv/bin/activate ]; then
