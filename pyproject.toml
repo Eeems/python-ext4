@@ -90,4 +90,4 @@ reportMissingTypeStubs = false
 reportImportCycles = false
 
 [tool.emake]
-test = ["./test.sh"]
+test = ["bash ./test.sh"]
