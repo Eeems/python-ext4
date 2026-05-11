@@ -31,6 +31,8 @@ if TYPE_CHECKING:
 
 
 class LittleEndianStructureWithVolume(LittleEndianStructure):
+    __slots__: tuple[str, ...] = ("_volume",)
+
     def __init__(self) -> None:
         super().__init__()
         self._volume: Volume | None = None
@@ -47,6 +49,8 @@ class LittleEndianStructureWithVolume(LittleEndianStructure):
 
 @final
 class DotDirectoryEntry2(LittleEndianStructureWithVolume):
+    __slots__ = ()
+
     _pack_ = 1
     # _anonymous_ = ()
     _fields_ = [
@@ -88,6 +92,8 @@ class DXRootInfo(LittleEndianStructure):
 
 
 class DXBase(Ext4Struct):
+    __slots__: tuple[str, ...] = ("directory",)
+
     def __init__(self, directory: "Directory", offset: int) -> None:
         self.directory: Directory = directory
         super().__init__(directory.volume, offset)
@@ -102,6 +108,8 @@ class DXBase(Ext4Struct):
 
 @final
 class DXEntry(DXBase):
+    __slots__ = ("index", "parent")
+
     _pack_ = 1
     # _anonymous_ = ("")
     _fields_ = [
@@ -119,6 +127,8 @@ class DXEntry(DXBase):
 
 
 class DXEntriesBase(DXBase):
+    __slots__: tuple[str, ...] = ()
+
     @override
     def read_from_volume(self) -> None:
         super().read_from_volume()
@@ -141,6 +151,8 @@ class DXEntriesBase(DXBase):
 
 @final
 class DXRoot(DXEntriesBase):
+    __slots__ = ()
+
     _pack_ = 1
     # _anonymous_ = ("")
     _fields_ = [
@@ -178,6 +190,8 @@ class DXFake(LittleEndianStructure):
 
 @final
 class DXNode(DXEntriesBase):
+    __slots__ = ()
+
     _pack_ = 1
     # _anonymous_ = ("")
     _fields_ = [
@@ -196,6 +210,8 @@ class DXNode(DXEntriesBase):
 
 @final
 class DXTail(DXBase):
+    __slots__ = ("parent",)
+
     _pack_ = 1
     # _anonymous_ = ("dt_reserved")
     _fields_ = [

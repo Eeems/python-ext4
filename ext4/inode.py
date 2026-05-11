@@ -162,6 +162,7 @@ class Osd2(LittleEndianUnion):
 class Inode(Ext4Struct):
     EXT4_GOOD_OLD_INODE_SIZE: int = 128
     EXT2_GOOD_OLD_INODE_SIZE: int = 128
+    __slots__: tuple[str, ...] = ("i_no", "tree")
     _pack_ = 1  # pyright: ignore[reportUnannotatedClassAttribute]
     _fields_ = [  # pyright: ignore[reportUnannotatedClassAttribute]
         ("i_mode", MODE.basetype),
@@ -451,26 +452,32 @@ class Inode(Ext4Struct):
                     raise
 
 
+@final
 class UnknownInode(Inode):
-    pass
+    __slots__ = ()
 
 
+@final
 class Fifo(Inode):
-    pass
+    __slots__ = ()
 
 
+@final
 class CharacterDevice(Inode):
-    pass
+    __slots__ = ()
 
 
+@final
 class BlockDevice(Inode):
-    pass
+    __slots__ = ()
 
 
+@final
 class Socket(Inode):
-    pass
+    __slots__ = ()
 
 
+@final
 class File(Inode):
     @override
     def open(
@@ -479,7 +486,10 @@ class File(Inode):
         return self._open(mode, encoding, newline)
 
 
+@final
 class SymbolicLink(Inode):
+    __slots__ = ()
+
     @property
     def is_fast_symlink(self) -> bool:
         i_blocks_lo = assert_cast(self.i_blocks_lo, int)  # pyright: ignore[reportAny]
@@ -498,7 +508,10 @@ class SymbolicLink(Inode):
         return self.volume.read(self.i_size)
 
 
+@final
 class Directory(Inode):
+    __slots__ = ("_inode_at_cache", "_dirents", "htree")
+
     def __init__(self, volume: Volume, offset: int, i_no: int) -> None:
         super().__init__(volume, offset, i_no)
         self._inode_at_cache: LRUCache[str | bytes, Inode] = LRUCache(maxsize=32)

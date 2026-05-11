@@ -20,7 +20,10 @@ if TYPE_CHECKING:
     from .volume import Volume
 
 
+@final
 class ExtentBlocks:
+    __slots__: tuple[str, ...] = ("extent", "_null_block")
+
     def __init__(self, extent: "Extent") -> None:
         self.extent: Extent = extent
         self._null_block: bytearray = bytearray(self.block_size)
@@ -74,6 +77,8 @@ class ExtentBlocks:
 
 @final
 class ExtentHeader(Ext4Struct):
+    __slots__ = ("tree", "indices", "extents", "tail")
+
     _pack_ = 1
     # _anonymous_ = ()
     _fields_ = [
@@ -153,6 +158,8 @@ class ExtentHeader(Ext4Struct):
 
 @final
 class ExtentIndex(Ext4Struct):
+    __slots__ = ("ei_no", "header")
+
     _pack_ = 1
     # _anonymous_ = ("ei_unused",)
     _fields_ = [
@@ -184,6 +191,8 @@ class ExtentIndex(Ext4Struct):
 
 @final
 class Extent(Ext4Struct):
+    __slots__ = ("ee_no", "header", "blocks")
+
     _pack_ = 1
     # _anonymous_ = ("ei_unused",)
     _fields_ = [
@@ -231,6 +240,8 @@ class Extent(Ext4Struct):
 
 @final
 class ExtentTail(Ext4Struct):
+    __slots__ = ("header",)
+
     _pack_ = 1
     _fields_ = [
         ("et_checksum", c_uint32),
@@ -250,6 +261,8 @@ class ExtentTail(Ext4Struct):
 
 
 class ExtentTree:
+    __slots__: tuple[str, ...] = ("inode", "headers")
+
     def __init__(self, inode: "Inode") -> None:
         self.inode: Inode = inode
         self.headers: list[ExtentHeader] = []

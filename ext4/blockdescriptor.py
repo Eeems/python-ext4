@@ -21,6 +21,8 @@ if TYPE_CHECKING:
 
 @final
 class BlockDescriptor(Ext4Struct):
+    __slots__ = ("bg_no",)
+
     _pack_ = 1
     # _anonymous_ = ("bg_reserved",)
     _fields_ = [

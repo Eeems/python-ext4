@@ -1,7 +1,10 @@
 import errno
 import io
 import os
-from typing import TYPE_CHECKING
+from typing import (
+    TYPE_CHECKING,
+    final,
+)
 
 from ._compat import override
 
@@ -11,7 +14,10 @@ if TYPE_CHECKING:
     from .volume import Volume
 
 
+@final
 class BlockIOBlocks:
+    __slots__ = ("blockio", "_null_block")
+
     def __init__(self, blockio: "BlockIO") -> None:
         self.blockio: BlockIO = blockio
         self._null_block: bytearray = bytearray(self.block_size)
@@ -41,7 +47,10 @@ class BlockIOBlocks:
         return self._null_block
 
 
+@final
 class BlockIO(io.RawIOBase):
+    __slots__ = ("inode", "cursor", "blocks")
+
     def __init__(self, inode: "Inode") -> None:
         super().__init__()
         self.inode: Inode = inode

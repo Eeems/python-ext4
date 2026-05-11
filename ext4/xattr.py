@@ -33,6 +33,8 @@ class ExtendedAttributeError(Exception):
 
 
 class ExtendedAttributeBase(Ext4Struct):
+    __slots__: tuple[str, ...] = ("inode", "data_size")
+
     def __init__(self, inode: "Inode", offset: int, size: int) -> None:
         self.inode: Inode = inode
         self.data_size: int = size
@@ -40,6 +42,7 @@ class ExtendedAttributeBase(Ext4Struct):
 
 
 class ExtendedAttributeIBodyHeader(ExtendedAttributeBase):
+    __slots__: tuple[str, ...] = ()
     _pack_ = 1  # pyright: ignore[reportUnannotatedClassAttribute]
     # _anonymous_ = ()
     _fields_ = [  # pyright: ignore[reportUnannotatedClassAttribute]
@@ -106,6 +109,7 @@ class ExtendedAttributeIBodyHeader(ExtendedAttributeBase):
 
 @final
 class ExtendedAttributeHeader(ExtendedAttributeIBodyHeader):
+    __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("h_reserved)
     _fields_ = [
@@ -154,6 +158,8 @@ class ExtendedAttributeHeader(ExtendedAttributeIBodyHeader):
 
 @final
 class ExtendedAttributeEntry(ExtendedAttributeBase):
+    __slots__: tuple[str, ...] = ("e_name",)
+
     NAME_INDICES = [
         "",
         "user.",
@@ -177,11 +183,15 @@ class ExtendedAttributeEntry(ExtendedAttributeBase):
         # ("e_name", c_char * self.e_name_len),
     ]
 
+    def __init__(self, inode: "Inode", offset: int, size: int) -> None:
+        self.e_name: bytes = b""
+        super().__init__(inode, offset, size)
+
     @override
     def read_from_volume(self) -> None:
         super().read_from_volume()
         e_name_len = assert_cast(self.e_name_len, int)  # pyright: ignore[reportAny]
-        self.e_name: bytes = self.volume.stream.read(e_name_len)  # pyright: ignore[reportUninitializedInstanceVariable]
+        self.e_name = self.volume.stream.read(e_name_len)
 
     @ExtendedAttributeBase.size.getter
     def size(self) -> int:

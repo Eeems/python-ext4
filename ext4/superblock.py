@@ -37,6 +37,8 @@ if TYPE_CHECKING:
 
 @final
 class Superblock(Ext4Struct):
+    __slots__ = ()
+
     _pack_ = 1
     # _anonymous_ = (
     #     "s_reserved_pad",
