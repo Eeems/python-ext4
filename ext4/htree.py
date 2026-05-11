@@ -108,7 +108,10 @@ class DXBase(Ext4Struct):
 
 @final
 class DXEntry(DXBase):
-    __slots__ = ("index", "parent")
+    __slots__ = (
+        "index",
+        "parent",
+    )
 
     _pack_ = 1
     # _anonymous_ = ("")

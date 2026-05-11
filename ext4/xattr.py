@@ -33,7 +33,10 @@ class ExtendedAttributeError(Exception):
 
 
 class ExtendedAttributeBase(Ext4Struct):
-    __slots__: tuple[str, ...] = ("inode", "data_size")
+    __slots__: tuple[str, ...] = (
+        "data_size",
+        "inode",
+    )
 
     def __init__(self, inode: "Inode", offset: int, size: int) -> None:
         self.inode: Inode = inode

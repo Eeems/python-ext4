@@ -16,7 +16,10 @@ if TYPE_CHECKING:
 
 @final
 class BlockIOBlocks:
-    __slots__ = ("blockio", "_null_block")
+    __slots__ = (
+        "_null_block",
+        "blockio",
+    )
 
     def __init__(self, blockio: "BlockIO") -> None:
         self.blockio: BlockIO = blockio
@@ -49,7 +52,11 @@ class BlockIOBlocks:
 
 @final
 class BlockIO(io.RawIOBase):
-    __slots__ = ("inode", "cursor", "blocks")
+    __slots__ = (
+        "blocks",
+        "cursor",
+        "inode",
+    )
 
     def __init__(self, inode: "Inode") -> None:
         super().__init__()

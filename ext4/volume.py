@@ -29,7 +29,12 @@ class InvalidStreamException(Exception):
 
 
 class Inodes:
-    __slots__: tuple[str, ...] = ("volume", "_group_cache", "_offset_cache", "_getitem_cache")
+    __slots__: tuple[str, ...] = (
+        "_getitem_cache",
+        "_group_cache",
+        "_offset_cache",
+        "volume",
+    )
 
     def __init__(self, volume: Volume) -> None:
         self.volume: Volume = volume
@@ -69,17 +74,17 @@ class Inodes:
 
 class Volume:
     __slots__: tuple[str, ...] = (
-        "stream",
-        "offset",
+        "_inode_at_cache",
         "cursor",
+        "group_descriptors",
+        "ignore_attr_name_index",
+        "ignore_checksum",
         "ignore_flags",
         "ignore_magic",
-        "ignore_checksum",
-        "ignore_attr_name_index",
-        "superblock",
-        "group_descriptors",
         "inodes",
-        "_inode_at_cache",
+        "offset",
+        "stream",
+        "superblock",
     )
 
     def __init__(

@@ -74,7 +74,10 @@ def to_hex(data: int | list[int] | bytes | None) -> str:
 
 
 class Ext4Struct(LittleEndianStructure):
-    __slots__: tuple[str, ...] = ("volume", "offset")
+    __slots__: tuple[str, ...] = (
+        "offset",
+        "volume",
+    )
 
     def __init__(self, volume: "Volume", offset: int) -> None:
         super().__init__()

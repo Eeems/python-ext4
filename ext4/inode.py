@@ -162,7 +162,10 @@ class Osd2(LittleEndianUnion):
 class Inode(Ext4Struct):
     EXT4_GOOD_OLD_INODE_SIZE: int = 128
     EXT2_GOOD_OLD_INODE_SIZE: int = 128
-    __slots__: tuple[str, ...] = ("i_no", "tree")
+    __slots__: tuple[str, ...] = (
+        "i_no",
+        "tree",
+    )
     _pack_ = 1  # pyright: ignore[reportUnannotatedClassAttribute]
     _fields_ = [  # pyright: ignore[reportUnannotatedClassAttribute]
         ("i_mode", MODE.basetype),
@@ -479,6 +482,8 @@ class Socket(Inode):
 
 @final
 class File(Inode):
+    __slots__ = ()
+
     @override
     def open(
         self, mode: str = "rb", encoding: None = None, newline: None = None
@@ -510,7 +515,11 @@ class SymbolicLink(Inode):
 
 @final
 class Directory(Inode):
-    __slots__ = ("_inode_at_cache", "_dirents", "htree")
+    __slots__ = (
+        "_dirents",
+        "_inode_at_cache",
+        "htree",
+    )
 
     def __init__(self, volume: Volume, offset: int, i_no: int) -> None:
         super().__init__(volume, offset, i_no)
