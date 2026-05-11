@@ -26,51 +26,8 @@ endif
 clean:
 	git clean --force -dX
 
-.PHONY: build
-build: wheel
-
-.PHONY: release
-release: wheel sdist
-
-.PHONY: sdist
-sdist: dist/${PACKAGE}-${VERSION}.tar.gz
-
-.PHONY: wheel
-wheel: dist/${PACKAGE}-${VERSION}-py3-none-any.whl
-
-.PHONY: native-wheel
-native-wheel:${VENV_BIN_ACTIVATE} dist $(OBJ)
-	. ${VENV_BIN_ACTIVATE}; \
-	python -m build --wheel
-
-dist:
-	mkdir -p dist
-
-dist/${PACKAGE}-${VERSION}.tar.gz: ${VENV_BIN_ACTIVATE} dist $(OBJ)
-	. ${VENV_BIN_ACTIVATE}; \
-	python -m build --sdist
-
-dist/${PACKAGE}-${VERSION}-py3-none-any.whl: ${VENV_BIN_ACTIVATE} dist $(OBJ)
-	. ${VENV_BIN_ACTIVATE}; \
-	python -m build --wheel --config-setting=build_with_nuitka=false
-
 ${VENV_BIN_ACTIVATE}: pyproject.toml
-	@echo "Setting up development virtual env in .venv"
-	python -m venv .venv
-	. ${VENV_BIN_ACTIVATE}; \
-	python -m pip install \
-	  --require-virtualenv \
-	  --editable \
-	  .[dev];
-
-.PHONY: test
-test: ${VENV_BIN_ACTIVATE}
-	@. ${VENV_BIN_ACTIVATE}; \
-	python -m pip install \
-	  --require-virtualenv \
-	  --editable \
-	  .[test];
-	$(SHELL) test.sh
+	emake requirements dev
 
 .PHONY: fuzz
 fuzz: ${VENV_BIN_ACTIVATE}
@@ -83,46 +40,3 @@ fuzz: ${VENV_BIN_ACTIVATE}
 	python fuzz.py \
 	  -rss_limit_mb=2048 \
 	  -max_total_time=$(FUZZ_TIMEOUT)
-
-.PHONY: all
-all: release
-
-.PHONY: lint
-lint: $(VENV_BIN_ACTIVATE);
-	@. ${VENV_BIN_ACTIVATE}; \
-	python -m pip install \
-	  --require-virtualenv \
-	  --editable \
-	    .[test]; \
-	python -m pip install \
-	  --require-virtualenv \
-	  --editable \
-	    .[fuzz]
-	. $(VENV_BIN_ACTIVATE); \
-	python -m ruff check; \
-	python -m basedpyright
-
-.PHONY: lint-fix
-lint-fix: $(VENV_BIN_ACTIVATE); \
-	@. ${VENV_BIN_ACTIVATE}; \
-	python -m pip install \
-	  --require-virtualenv \
-	  --editable \
-	    .[test]; \
-	python -m pip install \
-	  --require-virtualenv \
-	  --editable \
-	    .[fuzz]
-	. $(VENV_BIN_ACTIVATE); \
-	python -m ruff check --fix; \
-	python -m basedpyright
-
-.PHONY: format
-format: $(VENV_BIN_ACTIVATE)
-	. $(VENV_BIN_ACTIVATE); \
-	python -m ruff format --diff
-
-.PHONY: format-fix
-format-fix: $(VENV_BIN_ACTIVATE)
-	. $(VENV_BIN_ACTIVATE); \
-	python -m ruff format
