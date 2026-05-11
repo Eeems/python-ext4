@@ -78,6 +78,7 @@ class MalformedInodeError(Exception):
 
 @final
 class Linux1(LittleEndianStructure):
+    __slots__ = ()
     _pack_ = 1
     _fields_ = [
         ("l_i_version", c_uint32),
@@ -86,6 +87,7 @@ class Linux1(LittleEndianStructure):
 
 @final
 class Hurd1(LittleEndianStructure):
+    __slots__ = ()
     _pack_ = 1
     _fields_ = [
         ("h_i_translator", c_uint32),
@@ -94,6 +96,7 @@ class Hurd1(LittleEndianStructure):
 
 @final
 class Masix1(LittleEndianStructure):
+    __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("m_i_reserved1",)
     _fields_ = [
@@ -103,6 +106,7 @@ class Masix1(LittleEndianStructure):
 
 @final
 class Osd1(LittleEndianUnion):
+    __slots__ = ()
     _pack_ = 1
     _fields_ = [
         ("linux1", Linux1),
@@ -113,6 +117,7 @@ class Osd1(LittleEndianUnion):
 
 @final
 class Linux2(LittleEndianStructure):
+    __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("l_i_reserved",)
     _fields_ = [
@@ -127,6 +132,7 @@ class Linux2(LittleEndianStructure):
 
 @final
 class Hurd2(LittleEndianStructure):
+    __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("h_i_reserved1",)
     _fields_ = [
@@ -140,6 +146,7 @@ class Hurd2(LittleEndianStructure):
 
 @final
 class Masix2(LittleEndianStructure):
+    __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("h_i_reserved1", "m_i_reserved2")
     _fields_ = [
@@ -151,6 +158,7 @@ class Masix2(LittleEndianStructure):
 
 @final
 class Osd2(LittleEndianUnion):
+    __slots__ = ()
     _pack_ = 1
     _fields_ = [
         ("linux2", Linux2),

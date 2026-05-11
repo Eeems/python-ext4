@@ -80,6 +80,7 @@ class DotDirectoryEntry2(LittleEndianStructureWithVolume):
 
 @final
 class DXRootInfo(LittleEndianStructure):
+    __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("reserved_zero")
     _fields_ = [
@@ -174,6 +175,7 @@ class DXRoot(DXEntriesBase):
 
 @final
 class DXFake(LittleEndianStructure):
+    __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("")
     _fields_ = [
