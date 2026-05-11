@@ -32,6 +32,8 @@ jobs:
         run: pip install emake
       - name: Run lint
         run: emake lint
+        env:
+          PYTHONUNBUFFERED: "1"
 
   test-image:
     name: Generate test ext4 image
@@ -49,6 +51,8 @@ jobs:
         run: |
           set -e
           ./_test_image.sh
+        env:
+          PYTHONUNBUFFERED: "1"
       - uses: actions/upload-artifact@v6
         with:
           name: test.ext4
@@ -88,6 +92,8 @@ jobs:
       - name: Run tests
         shell: bash
         run: emake test
+        env:
+          PYTHONUNBUFFERED: "1"
 
   fuzz:
     name: Fuzz
@@ -112,6 +118,8 @@ jobs:
       - name: Run test
         shell: bash
         run: make fuzz
+        env:
+          PYTHONUNBUFFERED: "1"
 
   build-sdist:
     name: Build sdist
@@ -125,6 +133,8 @@ jobs:
       - *install-emake
       - name: Building sdist
         run: emake build --sdist
+        env:
+          PYTHONUNBUFFERED: "1"
       - uses: actions/upload-artifact@v6
         with:
           name: pip-sdist
@@ -148,6 +158,8 @@ jobs:
           path: .
       - name: Test wheel
         run: emake test --wheel
+        env:
+          PYTHONUNBUFFERED: "1"
       - uses: actions/upload-artifact@v6
         with:
           name: pip-wheel-none-any
@@ -188,6 +200,8 @@ jobs:
             --arch ${{ matrix.arch }} \
             --libc ${{ matrix.libc }} \
             --python ${{ matrix.python }}
+        env:
+          PYTHONUNBUFFERED: "1"
       - name: Download test.ext4
         uses: actions/download-artifact@v8
         with:
@@ -200,6 +214,8 @@ jobs:
             --arch ${{ matrix.arch }} \
             --libc ${{ matrix.libc }} \
             --python ${{ matrix.python }}
+        env:
+          PYTHONUNBUFFERED: "1"
       - uses: actions/upload-artifact@v6
         with:
           name: pip-wheel-${{ matrix.python }}-${{ matrix.arch }}-${{ matrix.libc }}
