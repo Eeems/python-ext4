@@ -272,3 +272,76 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name }}
         working-directory: ${{ steps.download.outputs.download-path }}
+
+  aur:
+    name: Update the AUR
+    if: github.repository == 'Eeems/python-ext4' && github.event_name == 'release' && startsWith(github.ref, 'refs/tags')
+    needs: publish
+    runs-on: ubuntu-latest
+    container:
+      image: eeems/archlinux:nuitka
+      options: --user=root:root
+    steps:
+      - name: Setup
+        run: |
+          chmod a+rwx .
+          chown notroot ~ .
+          su notroot -c '
+            yay -Syu --noconfirm
+            yay -S --noconfirm \
+              python-build \
+              python-installer \
+              python-setuptools \
+              rhash
+            mkdir -p "$HOME"/.ssh/
+            pushd "$HOME"/.ssh/
+            echo "${AUR_SSH:?ssh key missing}" > aur
+            chmod 0600 aur
+            chmod 0700 .
+            file aur
+            popd
+          '
+        env:
+          AUR_SSH: ${{ secrets.AUR_SSH }}
+
+      - name: Checkout the AUR repository
+        run: |
+          su notroot -c '
+            GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/aur" \
+            git clone ssh://aur@aur.archlinux.org/python-ext4.git .
+          '
+
+      - name: Download test.ext4
+        uses: actions/download-artifact@v8
+        with:
+          name: test.ext4
+          path: .
+
+      - name: Update PKGBUILD
+        run: |
+          su notroot -c '
+            version="${{ github.ref_name }}"
+            tar czvf test-images.tar.gz test*.ext4*
+            sed -i "s|pkgver=.*|pkgver=${version#v}|" PKGBUILD
+            updpkgsums PKGBUILD
+            makepkg --printsrcinfo > .SRCINFO
+            git add -f PKGBUILD .SRCINFO
+            git config --local user.email "nathaniel.vandiepen@gmail.com"
+            git config --local user.name "Nathaniel van Diepen"
+            git commit -m "Update to ${version#v}"
+            git show
+          '
+
+      - name: Test PKGBUILD
+        run: |
+          sudo -u notroot makepkg \
+            --noconfirm \
+            --syncdeps \
+            --install
+
+      - name: Push PKGBUILD
+        run: |
+          su notroot -c '
+            GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/aur" \
+            git push
+          '
