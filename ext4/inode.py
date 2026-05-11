@@ -78,6 +78,7 @@ class MalformedInodeError(Exception):
 
 @final
 class Linux1(LittleEndianStructure):
+    __slots__ = ()
     _pack_ = 1
     _fields_ = [
         ("l_i_version", c_uint32),
@@ -86,6 +87,7 @@ class Linux1(LittleEndianStructure):
 
 @final
 class Hurd1(LittleEndianStructure):
+    __slots__ = ()
     _pack_ = 1
     _fields_ = [
         ("h_i_translator", c_uint32),
@@ -94,6 +96,7 @@ class Hurd1(LittleEndianStructure):
 
 @final
 class Masix1(LittleEndianStructure):
+    __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("m_i_reserved1",)
     _fields_ = [
@@ -103,6 +106,7 @@ class Masix1(LittleEndianStructure):
 
 @final
 class Osd1(LittleEndianUnion):
+    __slots__ = ()
     _pack_ = 1
     _fields_ = [
         ("linux1", Linux1),
@@ -113,6 +117,7 @@ class Osd1(LittleEndianUnion):
 
 @final
 class Linux2(LittleEndianStructure):
+    __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("l_i_reserved",)
     _fields_ = [
@@ -127,6 +132,7 @@ class Linux2(LittleEndianStructure):
 
 @final
 class Hurd2(LittleEndianStructure):
+    __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("h_i_reserved1",)
     _fields_ = [
@@ -140,6 +146,7 @@ class Hurd2(LittleEndianStructure):
 
 @final
 class Masix2(LittleEndianStructure):
+    __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("h_i_reserved1", "m_i_reserved2")
     _fields_ = [
@@ -151,6 +158,7 @@ class Masix2(LittleEndianStructure):
 
 @final
 class Osd2(LittleEndianUnion):
+    __slots__ = ()
     _pack_ = 1
     _fields_ = [
         ("linux2", Linux2),
@@ -162,6 +170,10 @@ class Osd2(LittleEndianUnion):
 class Inode(Ext4Struct):
     EXT4_GOOD_OLD_INODE_SIZE: int = 128
     EXT2_GOOD_OLD_INODE_SIZE: int = 128
+    __slots__: tuple[str, ...] = (
+        "i_no",
+        "tree",
+    )
     _pack_ = 1  # pyright: ignore[reportUnannotatedClassAttribute]
     _fields_ = [  # pyright: ignore[reportUnannotatedClassAttribute]
         ("i_mode", MODE.basetype),
@@ -451,27 +463,35 @@ class Inode(Ext4Struct):
                     raise
 
 
+@final
 class UnknownInode(Inode):
-    pass
+    __slots__ = ()
 
 
+@final
 class Fifo(Inode):
-    pass
+    __slots__ = ()
 
 
+@final
 class CharacterDevice(Inode):
-    pass
+    __slots__ = ()
 
 
+@final
 class BlockDevice(Inode):
-    pass
+    __slots__ = ()
 
 
+@final
 class Socket(Inode):
-    pass
+    __slots__ = ()
 
 
+@final
 class File(Inode):
+    __slots__ = ()
+
     @override
     def open(
         self, mode: str = "rb", encoding: None = None, newline: None = None
@@ -479,7 +499,10 @@ class File(Inode):
         return self._open(mode, encoding, newline)
 
 
+@final
 class SymbolicLink(Inode):
+    __slots__ = ()
+
     @property
     def is_fast_symlink(self) -> bool:
         i_blocks_lo = assert_cast(self.i_blocks_lo, int)  # pyright: ignore[reportAny]
@@ -498,7 +521,14 @@ class SymbolicLink(Inode):
         return self.volume.read(self.i_size)
 
 
+@final
 class Directory(Inode):
+    __slots__ = (
+        "_dirents",
+        "_inode_at_cache",
+        "htree",
+    )
+
     def __init__(self, volume: Volume, offset: int, i_no: int) -> None:
         super().__init__(volume, offset, i_no)
         self._inode_at_cache: LRUCache[str | bytes, Inode] = LRUCache(maxsize=32)

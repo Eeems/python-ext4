@@ -28,6 +28,8 @@ EXT4_MAX_REC_LEN = (1 << 16) - 1
 
 
 class DirectoryEntryStruct(Ext4Struct):
+    __slots__: tuple[str, ...] = ("directory",)
+
     def __init__(self, directory: "Directory", offset: int) -> None:
         self.directory: Directory = directory
         super().__init__(directory.volume, offset)
@@ -39,6 +41,7 @@ class DirectoryEntryStruct(Ext4Struct):
 
 
 class DirectoryEntryBase(DirectoryEntryStruct):
+    __slots__: tuple[str, ...] = ()
     @property
     def name_bytes(self) -> bytes:
         return bytes(self.name)[: self.name_len]  # pyright: ignore[reportAny]
@@ -55,6 +58,7 @@ class DirectoryEntryBase(DirectoryEntryStruct):
 
 @final
 class DirectoryEntry(DirectoryEntryBase):
+    __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("l_i_reserved",)
     _fields_ = [
@@ -67,6 +71,7 @@ class DirectoryEntry(DirectoryEntryBase):
 
 @final
 class DirectoryEntry2(DirectoryEntryBase):
+    __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("l_i_reserved",)
     _fields_ = [
@@ -85,6 +90,7 @@ class DirectoryEntry2(DirectoryEntryBase):
 
 @final
 class DirectoryEntryTail(DirectoryEntryStruct):
+    __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("det_reserved_zero1", "det_reserved_zero2",)
     _fields_ = [
@@ -107,6 +113,7 @@ class DirectoryEntryTail(DirectoryEntryStruct):
 
 @final
 class DirectoryEntryHash(DirectoryEntryStruct):
+    __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("det_reserved_zero1", "det_reserved_zero2",)
     _fields_ = [

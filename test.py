@@ -164,7 +164,7 @@ for img_file in ("test32.ext4", "test64.ext4"):
             inode = volume.inode_at(f"/test{i}.txt")
             attrs = {k: v for k, v in inode.xattrs}
             for j in range(1, 21):
-                _assert(f'attrs["user.name{j}"] == b"value{i}_{j}"')
+                _assert(f'attrs["user.name{j}"] == b"value{i}_{j}"', lambda: attrs)
 
             data = inode.open().read()
             _assert(f'data == b"hello world{i}\\n"')
