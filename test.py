@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
+import time
 import traceback
 from collections.abc import Callable
 from io import BufferedReader
@@ -60,6 +61,30 @@ def _not_raises(source: str, debug: Callable[[], Any] | None = None) -> None:  #
     try:
         _ = eval(source)  # noqa: S307  # pyright: ignore[reportAny]
         print("pass")
+
+    except Exception:
+        FAILED = True  # pyright: ignore[reportConstantRedefinition]
+        print("fail")
+        if debug is not None:
+            print(f"  {debug()}", file=sys.stderr)
+
+
+def _time(source: str, duration: int, debug: Callable[[], Any] | None = None) -> None:  # pyright: ignore[reportExplicitAny]
+    global FAILED  # noqa: PLW0603
+    print(f"check {source} takes less than {duration} seconds: ", end="")
+    try:
+        start = time.time()
+        _ = eval(source)  # noqa: S307  # pyright: ignore[reportAny]
+        actual = time.time() - start
+        if duration < actual:
+            print("pass")
+            return
+
+        FAILED = True  # pyright: ignore[reportConstantRedefinition]
+        print("fail")
+        print(f"  {actual} seconds", file=sys.stderr)
+        if debug is not None:
+            print(f"  {debug()}", file=sys.stderr)
 
     except Exception:
         FAILED = True  # pyright: ignore[reportConstantRedefinition]
@@ -264,5 +289,83 @@ with open(img_file, "rb") as f:
         non_htree_dir = cast(ext4.Directory, volume.inode_at("/empty"))
         _assert("not non_htree_dir.is_htree")
 
+img_file = "test_htree_multi.ext4"
+print(f"Testing image: {img_file}")
+with open(img_file, "rb") as f:
+    volume = None
+    try:
+        volume = ext4.Volume(f)
+
+    except Exception:
+        FAILED = True  # pyright: ignore[reportConstantRedefinition]
+        traceback.print_exc()
+
+    if volume is not None:
+        _assert("volume.superblock is not None")
+        _assert("volume.bad_blocks is not None")
+        _assert("volume.boot_loader is not None")
+        _assert("volume.journal is not None")
+        test_root_inode(volume)
+        _assert("volume.root.is_htree == True")
+        _assert("volume.root.htree is not None")
+
+        htree = volume.root.htree
+        _assert("htree is not None")
+        if htree is not None:
+            _assert(
+                "isinstance(htree.dot, ext4.DotDirectoryEntry2)",
+                lambda: htree.dot,  # pyright: ignore[reportOptionalMemberAccess, reportAny]
+            )
+            _assert(
+                "isinstance(htree.dotdot, ext4.DotDirectoryEntry2)",
+                lambda: htree.dotdot,  # pyright: ignore[reportOptionalMemberAccess, reportAny]
+            )
+            _assert("htree.limit > 0", lambda: htree.limit)  # pyright: ignore[reportOptionalMemberAccess, reportAny]
+            _assert("htree.count > 0", lambda: htree.count)  # pyright: ignore[reportOptionalMemberAccess, reportAny]
+            _assert("htree.count <= htree.limit")
+            _assert("htree.block >= 0", lambda: htree.block)  # pyright: ignore[reportOptionalMemberAccess, reportAny]
+            _assert("htree.dx_root_info is not None")
+
+            _assert("htree.dot.verify() is None")
+            _assert("htree.dotdot.verify() is None")
+
+            _assert("htree.dot.name == b'.'", lambda: htree.dot.name)  # pyright: ignore[reportAny, reportOptionalMemberAccess]
+            _assert("htree.dotdot.name == b'..'", lambda: htree.dotdot.name)  # pyright: ignore[reportAny, reportOptionalMemberAccess]
+
+            dx_root_info = htree.dx_root_info  # pyright: ignore[reportAny]
+            _assert(
+                "isinstance(dx_root_info.hash_version, int)",
+                lambda: dx_root_info.hash_version,  # pyright: ignore[reportAny]
+            )
+            _not_raises(
+                "ext4.DX_HASH(dx_root_info.hash_version)",
+                lambda: dx_root_info.hash_version,  # pyright: ignore[reportAny]
+            )
+            _assert("dx_root_info.info_length == 8", lambda: dx_root_info.info_length)  # pyright: ignore[reportAny]
+            _assert(
+                "dx_root_info.indirect_levels > 0",
+                lambda: dx_root_info.indirect_levels,  # pyright: ignore[reportAny]
+            )
+            entries = list(htree.entries)
+            _assert("len(entries) > 0", lambda: len(entries))
+            _assert(
+                "len(entries) == htree.count - 1",
+                lambda: f"{len(entries)} != {htree.count - 1}",  # pyright: ignore[reportAny, reportOptionalMemberAccess]
+            )
+            for entry in entries:
+                _assert("isinstance(entry.hash, int)", lambda: entry.hash)  # pyright: ignore[reportAny]
+                _assert("isinstance(entry.block, int)", lambda: entry.block)  # pyright: ignore[reportAny]
+
+            if entries:
+                first_entry = entries[0]
+                _assert("first_entry.hash >= 0", lambda: first_entry.hash)  # pyright: ignore[reportAny]
+                _assert("first_entry.block > 0", lambda: first_entry.block)  # pyright: ignore[reportAny]
+
+                block_io = ext4.BlockIO(volume.root)
+                block = block_io.blocks[first_entry.block]  # pyright: ignore[reportAny]
+                _assert("len(block) > 0", lambda: len(block))
+                _assert(f"len(block) == {volume.block_size}", lambda: len(block))
+
+            _time('volume.inode_at("/12000")', 10)
 if FAILED:
     sys.exit(1)
