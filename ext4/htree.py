@@ -178,8 +178,8 @@ class DXEntries:
 
 class DXEntriesBase(DXBase):
     __slots__: tuple[str, ...] = (
-        "parent",
         "entries",
+        "parent",
     )
 
     def __init__(self, directory: "Directory", offset: int) -> None:
