@@ -530,6 +530,7 @@ class Directory(Inode):
         "_dirents",
         "_inode_at_cache",
         "htree",
+        "__dict__",
     )
 
     def __init__(self, volume: Volume, offset: int, i_no: int) -> None:
