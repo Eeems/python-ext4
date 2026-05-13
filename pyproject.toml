@@ -25,7 +25,7 @@ classifiers = [
 license = "MIT"
 dynamic = ["readme"]
 dependencies = [
-    "cachetools==6.0.0",
+    "cachetools==7.1.1",
     "crcmod==1.7",
     "typing-extensions==4.15.0; python_version<\"3.12\"",
 ]
