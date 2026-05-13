@@ -48,7 +48,10 @@ from .extent import (
     ExtentIndex,
     ExtentTree,
 )
-from .htree import DXRoot
+from .htree import (
+    DXRoot,
+    HtreeHashError,
+)
 from .struct import (
     Ext4Struct,
     MagicError,
@@ -672,9 +675,13 @@ class Directory(Inode):
             inode = None
 
             if cwd.is_htree and cwd.htree is not None:
-                inode_no = cwd.htree.lookup(name)
-                if inode_no is not None:
-                    inode = self.volume.inodes[inode_no]
+                try:
+                    inode_no = cwd.htree.lookup(name)
+                    if inode_no is not None:
+                        inode = self.volume.inodes[inode_no]
+
+                except HtreeHashError:
+                    pass
 
             if inode is None:
                 for dirent, _ in cwd.opendir():

@@ -1,4 +1,6 @@
+import errno
 import warnings
+from collections.abc import Iterator
 from ctypes import (
     LittleEndianStructure,
     addressof,
@@ -11,7 +13,6 @@ from ctypes import (
 )
 from typing import (
     TYPE_CHECKING,
-    Self,
     final,
 )
 
@@ -109,6 +110,12 @@ class DXBase(Ext4Struct):
         reader = self.directory._open()  # pyright: ignore[reportPrivateUsage]
         _ = reader.seek(self.offset)
         data = reader.read(sizeof(self))
+        if len(data) != sizeof(self):
+            raise OSError(
+                errno.EIO,
+                f"Short read for {type(self).__name__} at offset {self.offset}",
+            )
+
         _ = memmove(addressof(self), data, sizeof(self))
 
 
@@ -139,14 +146,12 @@ class DXEntry(DXBase):
 class DXEntries:
     __slots__ = (
         "_cache",
-        "_index",
         "base",
     )
 
     def __init__(self, base: "DXEntriesBase") -> None:
         self.base: DXEntriesBase = base
         self._cache: dict[int, DXEntry] = {}
-        self._index: int = 0
 
     def __contains__(self, index: int) -> bool:
         return 0 <= index < self.base.count  # pyright: ignore[reportAny]
@@ -155,16 +160,9 @@ class DXEntries:
         """Length of entries minus the DXTail"""
         return self.base.count - 1  # pyright: ignore[reportAny]
 
-    def __iter__(self) -> Self:
-        return self
-
-    def __next__(self) -> DXEntry:
-        if self._index >= len(self):
-            raise StopIteration()
-
-        entry = self[self._index]
-        self._index += 1
-        return entry
+    def __iter__(self) -> Iterator[DXEntry]:
+        for index in range(len(self)):
+            yield self[index]
 
     def __getitem__(self, index: int) -> DXEntry:
         if index not in self:
