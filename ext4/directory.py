@@ -40,7 +40,7 @@ class DirectoryEntryStruct(Ext4Struct):
         _ = reader.seek(self.offset)
         data = reader.read(self.size)
         # Do not guard against short reads, this happens for the last entry
-        _ = memmove(addressof(self), data, self.size)
+        _ = memmove(addressof(self), data, len(data))
 
 
 class DirectoryEntryBase(DirectoryEntryStruct):
