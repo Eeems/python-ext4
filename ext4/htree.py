@@ -389,7 +389,7 @@ class DXRoot(DXEntriesBase):
 
         hash_val &= ~1
         if hash_val == 0xFFFFFFFE:
-            hash_val = 0x7FFFFFFC
+            hash_val = 0xFFFFFFFC
 
         return hash_val, minor_hash
 
