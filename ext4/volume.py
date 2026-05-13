@@ -34,6 +34,7 @@ class Inodes:
         "_group_cache",
         "_offset_cache",
         "volume",
+        "__dict__",
     )
 
     def __init__(self, volume: Volume) -> None:

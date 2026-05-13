@@ -455,11 +455,15 @@ class DXRoot(DXEntriesBase):
             while current_idx < len(leaf_entries):
                 entry = leaf_entries[current_idx]
                 blocks_to_scan.append(entry.block)  # pyright: ignore[reportAny]
-                if not (entry.hash & 1):  # pyright: ignore[reportAny]  # collision bit clear
+                next_idx = current_idx + 1
+                if (
+                    next_idx >= len(leaf_entries)
+                    or not (leaf_entries[next_idx].hash & 1)  # pyright: ignore[reportAny]
+                    or (leaf_entries[next_idx].hash & ~1) != (hash_val & ~1)  # pyright: ignore[reportAny]
+                ):
                     break
 
-                current_idx += 1
-
+                current_idx = next_idx
         else:
             blocks_to_scan = [block_num]
 
