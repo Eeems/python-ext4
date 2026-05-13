@@ -17,17 +17,17 @@ FAILED = False
 
 def test_path_tuple(path: str | bytes, expected: tuple[bytes, ...]) -> None:
     global FAILED  # noqa: PLW0603
-    print(f"check Volume.path_tuple({path}): ", end="")
+    print(f"check Volume.path_tuple({path}): ", end="", flush=True)
     try:
         t = ext4.Volume.path_tuple(path)
         if t != expected:
             raise ValueError(f"Result is unexpected {t}")
 
-        print("pass")
+        print("pass", flush=True)
 
     except Exception as e:
         FAILED = True  # pyright: ignore[reportConstantRedefinition]
-        print("fail")
+        print("fail", flush=True)
         print("  ", end="", file=sys.stderr)
         print(e, file=sys.stderr)
 
@@ -43,27 +43,27 @@ def _eval_or_False(source: str) -> Any:  # pyright: ignore[reportExplicitAny, re
 
 def _assert(source: str, debug: Callable[[], Any] | None = None) -> None:  # pyright: ignore[reportExplicitAny]
     global FAILED  # noqa: PLW0603
-    print(f"check {source}: ", end="")
+    print(f"check {source}: ", end="", flush=True)
     if _eval_or_False(source):
-        print("pass")
+        print("pass", flush=True)
         return
 
     FAILED = True  # pyright: ignore[reportConstantRedefinition]
-    print("fail")
+    print("fail", flush=True)
     if debug is not None:
         print(f"  {debug()}", file=sys.stderr)
 
 
 def _not_raises(source: str, debug: Callable[[], Any] | None = None) -> None:  # pyright: ignore[reportExplicitAny]
     global FAILED  # noqa: PLW0603
-    print(f"check {source} does not raise exception: ", end="")
+    print(f"check {source} does not raise exception: ", end="", flush=True)
     try:
         _ = eval(source)  # noqa: S307  # pyright: ignore[reportAny]
-        print("pass")
+        print("pass", flush=True)
 
     except Exception:
         FAILED = True  # pyright: ignore[reportConstantRedefinition]
-        print("fail")
+        print("fail", flush=True)
         if debug is not None:
             print(f"  {debug()}", file=sys.stderr)
 
@@ -71,17 +71,17 @@ def _not_raises(source: str, debug: Callable[[], Any] | None = None) -> None:  #
 def test_magic_error(f: BufferedReader) -> None:
     global FAILED  # noqa: PLW0603
     try:
-        print("check MagicError: ", end="")
+        print("check MagicError: ", end="", flush=True)
         _ = ext4.Volume(f, offset=0)
         FAILED = True  # pyright: ignore[reportConstantRedefinition]
-        print("fail")
+        print("fail", flush=True)
         print("  MagicError not raised")
     except ext4.struct.MagicError:
-        print("pass")
+        print("pass", flush=True)
 
     except Exception as e:
         FAILED = True  # pyright: ignore[reportConstantRedefinition]
-        print("fail")
+        print("fail", flush=True)
         print("  ", end="", file=sys.stderr)
         print(e, file=sys.stderr)
 
@@ -89,29 +89,29 @@ def test_magic_error(f: BufferedReader) -> None:
 def test_root_inode(volume: ext4.Volume) -> None:
     global FAILED  # noqa: PLW0603
     try:
-        print("Validate root inode: ", end="")
+        print("Validate root inode: ", end="", flush=True)
         volume.root.validate()
-        print("pass")
+        print("pass", flush=True)
 
     except ext4.struct.ChecksumError as e:
         FAILED = True  # pyright: ignore[reportConstantRedefinition]
-        print("fail")
+        print("fail", flush=True)
         print("  ", end="", file=sys.stderr)
         print(e, file=sys.stderr)
 
 
-print("check ext4.Volume stream validation: ", end="")
+print("check ext4.Volume stream validation: ", end="", flush=True)
 try:
     _ = ext4.Volume(1)  # pyright: ignore[reportArgumentType]
     FAILED = True  # pyright: ignore[reportConstantRedefinition]
-    print("fail")
+    print("fail", flush=True)
 
 except ext4.InvalidStreamException:
-    print("pass")
+    print("pass", flush=True)
 
 except Exception as e:
     FAILED = True  # pyright: ignore[reportConstantRedefinition]
-    print("fail")
+    print("fail", flush=True)
     print("  ", end="", file=sys.stderr)
     print(e, file=sys.stderr)
 
@@ -238,7 +238,7 @@ with open(img_file, "rb") as f:
                 lambda: dx_root_info.indirect_levels,  # pyright: ignore[reportAny]
             )
 
-            entries = list(htree.entries)
+            entries = htree.entries
             _assert("len(entries) > 0", lambda: len(entries))
             _assert(
                 "len(entries) == htree.count - 1",
@@ -264,5 +264,87 @@ with open(img_file, "rb") as f:
         non_htree_dir = cast(ext4.Directory, volume.inode_at("/empty"))
         _assert("not non_htree_dir.is_htree")
 
+img_file = "test_htree_multi.ext4"
+print(f"Testing image: {img_file}")
+with open(img_file, "rb") as f:
+    volume = None
+    try:
+        volume = ext4.Volume(f)
+
+    except Exception:
+        FAILED = True  # pyright: ignore[reportConstantRedefinition]
+        traceback.print_exc()
+
+    if volume is not None:
+        _assert("volume.superblock is not None")
+        _assert("volume.bad_blocks is not None")
+        _assert("volume.boot_loader is not None")
+        _assert("volume.journal is not None")
+        test_root_inode(volume)
+        _assert("volume.root.is_htree == True")
+        _assert("volume.root.htree is not None")
+
+        htree = volume.root.htree
+        _assert("htree is not None")
+        if htree is not None:
+            _assert(
+                "isinstance(htree.dot, ext4.DotDirectoryEntry2)",
+                lambda: htree.dot,  # pyright: ignore[reportOptionalMemberAccess, reportAny]
+            )
+            _assert(
+                "isinstance(htree.dotdot, ext4.DotDirectoryEntry2)",
+                lambda: htree.dotdot,  # pyright: ignore[reportOptionalMemberAccess, reportAny]
+            )
+            _assert("htree.limit > 0", lambda: htree.limit)  # pyright: ignore[reportOptionalMemberAccess, reportAny]
+            _assert("htree.count > 0", lambda: htree.count)  # pyright: ignore[reportOptionalMemberAccess, reportAny]
+            _assert("htree.count <= htree.limit")
+            _assert("htree.block >= 0", lambda: htree.block)  # pyright: ignore[reportOptionalMemberAccess, reportAny]
+            _assert("htree.dx_root_info is not None")
+
+            _assert("htree.dot.verify() is None")
+            _assert("htree.dotdot.verify() is None")
+
+            _assert("htree.dot.name == b'.'", lambda: htree.dot.name)  # pyright: ignore[reportAny, reportOptionalMemberAccess]
+            _assert("htree.dotdot.name == b'..'", lambda: htree.dotdot.name)  # pyright: ignore[reportAny, reportOptionalMemberAccess]
+
+            dx_root_info = htree.dx_root_info  # pyright: ignore[reportAny]
+            _assert(
+                "isinstance(dx_root_info.hash_version, int)",
+                lambda: dx_root_info.hash_version,  # pyright: ignore[reportAny]
+            )
+            _not_raises(
+                "ext4.DX_HASH(dx_root_info.hash_version)",
+                lambda: dx_root_info.hash_version,  # pyright: ignore[reportAny]
+            )
+            _assert("dx_root_info.info_length == 8", lambda: dx_root_info.info_length)  # pyright: ignore[reportAny]
+            _assert(
+                "dx_root_info.indirect_levels > 0",
+                lambda: dx_root_info.indirect_levels,  # pyright: ignore[reportAny]
+            )
+            entries = htree.entries
+            _assert("len(entries) > 0", lambda: len(entries))
+            _assert(
+                "len(entries) == htree.count - 1",
+                lambda: f"{len(entries)} != {htree.count - 1}",  # pyright: ignore[reportAny, reportOptionalMemberAccess]
+            )
+            for entry in entries:
+                _assert("isinstance(entry.hash, int)", lambda: entry.hash)  # pyright: ignore[reportAny]
+                _assert("isinstance(entry.block, int)", lambda: entry.block)  # pyright: ignore[reportAny]
+
+            if entries:
+                first_entry = entries[0]
+                _assert("first_entry.hash >= 0", lambda: first_entry.hash)  # pyright: ignore[reportAny]
+                _assert("first_entry.block > 0", lambda: first_entry.block)  # pyright: ignore[reportAny]
+
+                block_io = ext4.BlockIO(volume.root)
+                block = block_io.blocks[first_entry.block]  # pyright: ignore[reportAny]
+                _assert("len(block) > 0", lambda: len(block))
+                _assert(f"len(block) == {volume.block_size}", lambda: len(block))
+
+            inode_no = htree.lookup("12000")
+            _assert("inode_no is not None")
+            if inode_no is not None:
+                inode = volume.inodes[inode_no]
+                _assert("isinstance(inode, ext4.File)", lambda: inode)
 if FAILED:
     sys.exit(1)

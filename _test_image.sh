@@ -45,7 +45,6 @@ mkimage test32 "$tmp_dir" 20 -O ^64bit
 mkimage test64 "$tmp_dir" 20 -O 64bit
 
 rm -f "$tmp_dir"/test*.txt "$tmp_dir"/symlink.txt
-echo "[test] Generating files..."
 
 echo "[test] Making image test_htree..."
 chronic dd if=/dev/zero of=test_htree.ext4 count=20 bs=1048576
@@ -59,3 +58,15 @@ sudo umount "$tmp_dir"
 # shellcheck disable=SC2064
 trap "rmdir \"$tmp_dir\"" EXIT
 chronic e2fsck -Dy test_htree.ext4
+
+echo "[test] Making image test_htree_multi..."
+chronic dd if=/dev/zero of=test_htree_multi.ext4 count=20 bs=1048576
+chronic mkfs.ext4 -g 1024 -b 1024 -O 64bit,dir_index -N 13000 test_htree_multi.ext4
+sudo mount -t ext4 test_htree_multi.ext4 "$tmp_dir"
+# shellcheck disable=SC2064
+trap "sudo umount \"$tmp_dir\";rmdir \"$tmp_dir\"" EXIT
+printf '%s\n' "$tmp_dir"/{1..12000} | xargs sudo touch
+sudo umount "$tmp_dir"
+# shellcheck disable=SC2064
+trap "rmdir \"$tmp_dir\"" EXIT
+chronic e2fsck -Dy test_htree_multi.ext4

@@ -34,6 +34,7 @@ class Inodes:
         "_group_cache",
         "_offset_cache",
         "volume",
+        "__dict__",
     )
 
     def __init__(self, volume: Volume) -> None:
@@ -74,7 +75,6 @@ class Inodes:
 
 class Volume:
     __slots__: tuple[str, ...] = (
-        "_inode_at_cache",
         "cursor",
         "group_descriptors",
         "ignore_attr_name_index",
@@ -134,7 +134,6 @@ class Volume:
             self.group_descriptors.insert(index, descriptor)
 
         self.inodes: Inodes = Inodes(self)
-        self._inode_at_cache: LRUCache[str | bytes, Inode] = LRUCache(maxsize=32)
 
     def __len__(self) -> int:
         _ = self.stream.seek(0, io.SEEK_END)
@@ -237,28 +236,5 @@ class Volume:
 
         return tuple(x.encode("utf-8") for x in PurePosixPath(path).parts[1:])
 
-    @cachedmethod(lambda self: self._inode_at_cache)  # pyright: ignore[reportAny]
     def inode_at(self, path: str | bytes) -> Inode:
-        paths = list(self.path_tuple(path))
-        cwd = self.root
-        if not paths:
-            return cwd
-
-        while paths:
-            if not isinstance(cwd, Directory):
-                raise OSError(errno.ENOTDIR, os.strerror(errno.ENOTDIR))
-
-            name = paths.pop(0)
-            inode = None
-            for dirent, _ in cwd.opendir():
-                if dirent.name_bytes == name:
-                    dirent_inode = assert_cast(dirent.inode, int)  # pyright: ignore[reportAny]
-                    inode = self.inodes[dirent_inode]
-                    break
-
-            if inode is None:
-                raise FileNotFoundError(path)
-
-            cwd = inode
-
-        return cwd
+        return self.root.inode_at(b"/".join(self.path_tuple(path)))
