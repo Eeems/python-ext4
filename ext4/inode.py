@@ -634,18 +634,20 @@ class Directory(Inode):
         self,
     ) -> Generator[tuple[DirectoryEntry | DirectoryEntry2, EXT4_FT], Any, None]:  # pyright: ignore[reportExplicitAny]
         for dirent in self._opendir():
-            if isinstance(dirent, DirectoryEntry2):
-                file_type = EXT4_FT(dirent.file_type)  # pyright: ignore[reportAny]
-                if file_type == EXT4_FT.DIR_CSUM:
-                    continue
-
-                if not self._is_valid_file_type(file_type):
-                    raise OpenDirectoryError(f"Unexpected file type: {file_type}")
-
-            else:
+            if not isinstance(dirent, DirectoryEntry2):
                 file_type = self._get_file_type(dirent)
+                yield dirent, file_type
+                continue
 
-            yield dirent, file_type
+            file_type = EXT4_FT(dirent.file_type)  # pyright: ignore[reportAny]
+            if file_type == EXT4_FT.DIR_CSUM:
+                continue
+
+            if self._is_valid_file_type(file_type):
+                yield dirent, file_type
+                continue
+
+            raise OpenDirectoryError(f"Unexpected file type: {file_type}")
 
     @cachedmethod(lambda self: self._inode_at_cache)  # pyright: ignore[reportAny]
     def inode_at(self, path: str | bytes) -> Inode:
@@ -668,11 +670,18 @@ class Directory(Inode):
 
             name = paths.pop(0)
             inode = None
-            for dirent, _ in cwd.opendir():
-                if dirent.name_bytes == name:
-                    dirent_inode = assert_cast(dirent.inode, int)  # pyright: ignore[reportAny]
-                    inode = self.volume.inodes[dirent_inode]
-                    break
+
+            if cwd.is_htree and cwd.htree is not None:
+                inode_no = cwd.htree.lookup(name)
+                if inode_no is not None:
+                    inode = self.volume.inodes[inode_no]
+
+            if inode is None:
+                for dirent, _ in cwd.opendir():
+                    if dirent.name_bytes == name:
+                        dirent_inode = assert_cast(dirent.inode, int)  # pyright: ignore[reportAny]
+                        inode = self.volume.inodes[dirent_inode]
+                        break
 
             if inode is None:
                 raise FileNotFoundError(path)

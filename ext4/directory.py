@@ -36,12 +36,15 @@ class DirectoryEntryStruct(Ext4Struct):
 
     @override
     def read_from_volume(self) -> None:
-        data = self.directory._open().read()[self.offset : self.offset + self.size]  # pyright: ignore[reportPrivateUsage]
+        reader = self.directory._open()  # pyright: ignore[reportPrivateUsage]
+        _ = reader.seek(self.offset)
+        data = reader.read(self.size)
         _ = memmove(addressof(self), data, self.size)
 
 
 class DirectoryEntryBase(DirectoryEntryStruct):
     __slots__: tuple[str, ...] = ()
+
     @property
     def name_bytes(self) -> bytes:
         return bytes(self.name)[: self.name_len]  # pyright: ignore[reportAny]

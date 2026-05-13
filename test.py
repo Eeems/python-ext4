@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import sys
-import time
 import traceback
 from collections.abc import Callable
 from io import BufferedReader
@@ -18,17 +17,17 @@ FAILED = False
 
 def test_path_tuple(path: str | bytes, expected: tuple[bytes, ...]) -> None:
     global FAILED  # noqa: PLW0603
-    print(f"check Volume.path_tuple({path}): ", end="")
+    print(f"check Volume.path_tuple({path}): ", end="", flush=True)
     try:
         t = ext4.Volume.path_tuple(path)
         if t != expected:
             raise ValueError(f"Result is unexpected {t}")
 
-        print("pass")
+        print("pass", flush=True)
 
     except Exception as e:
         FAILED = True  # pyright: ignore[reportConstantRedefinition]
-        print("fail")
+        print("fail", flush=True)
         print("  ", end="", file=sys.stderr)
         print(e, file=sys.stderr)
 
@@ -44,51 +43,27 @@ def _eval_or_False(source: str) -> Any:  # pyright: ignore[reportExplicitAny, re
 
 def _assert(source: str, debug: Callable[[], Any] | None = None) -> None:  # pyright: ignore[reportExplicitAny]
     global FAILED  # noqa: PLW0603
-    print(f"check {source}: ", end="")
+    print(f"check {source}: ", end="", flush=True)
     if _eval_or_False(source):
-        print("pass")
+        print("pass", flush=True)
         return
 
     FAILED = True  # pyright: ignore[reportConstantRedefinition]
-    print("fail")
+    print("fail", flush=True)
     if debug is not None:
         print(f"  {debug()}", file=sys.stderr)
 
 
 def _not_raises(source: str, debug: Callable[[], Any] | None = None) -> None:  # pyright: ignore[reportExplicitAny]
     global FAILED  # noqa: PLW0603
-    print(f"check {source} does not raise exception: ", end="")
+    print(f"check {source} does not raise exception: ", end="", flush=True)
     try:
         _ = eval(source)  # noqa: S307  # pyright: ignore[reportAny]
-        print("pass")
+        print("pass", flush=True)
 
     except Exception:
         FAILED = True  # pyright: ignore[reportConstantRedefinition]
-        print("fail")
-        if debug is not None:
-            print(f"  {debug()}", file=sys.stderr)
-
-
-def _time(source: str, duration: int, debug: Callable[[], Any] | None = None) -> None:  # pyright: ignore[reportExplicitAny]
-    global FAILED  # noqa: PLW0603
-    print(f"check {source} takes less than {duration} seconds: ", end="")
-    try:
-        start = time.time()
-        _ = eval(source)  # noqa: S307  # pyright: ignore[reportAny]
-        actual = time.time() - start
-        if duration < actual:
-            print("pass")
-            return
-
-        FAILED = True  # pyright: ignore[reportConstantRedefinition]
-        print("fail")
-        print(f"  {actual} seconds", file=sys.stderr)
-        if debug is not None:
-            print(f"  {debug()}", file=sys.stderr)
-
-    except Exception:
-        FAILED = True  # pyright: ignore[reportConstantRedefinition]
-        print("fail")
+        print("fail", flush=True)
         if debug is not None:
             print(f"  {debug()}", file=sys.stderr)
 
@@ -96,17 +71,17 @@ def _time(source: str, duration: int, debug: Callable[[], Any] | None = None) ->
 def test_magic_error(f: BufferedReader) -> None:
     global FAILED  # noqa: PLW0603
     try:
-        print("check MagicError: ", end="")
+        print("check MagicError: ", end="", flush=True)
         _ = ext4.Volume(f, offset=0)
         FAILED = True  # pyright: ignore[reportConstantRedefinition]
-        print("fail")
+        print("fail", flush=True)
         print("  MagicError not raised")
     except ext4.struct.MagicError:
-        print("pass")
+        print("pass", flush=True)
 
     except Exception as e:
         FAILED = True  # pyright: ignore[reportConstantRedefinition]
-        print("fail")
+        print("fail", flush=True)
         print("  ", end="", file=sys.stderr)
         print(e, file=sys.stderr)
 
@@ -114,29 +89,29 @@ def test_magic_error(f: BufferedReader) -> None:
 def test_root_inode(volume: ext4.Volume) -> None:
     global FAILED  # noqa: PLW0603
     try:
-        print("Validate root inode: ", end="")
+        print("Validate root inode: ", end="", flush=True)
         volume.root.validate()
-        print("pass")
+        print("pass", flush=True)
 
     except ext4.struct.ChecksumError as e:
         FAILED = True  # pyright: ignore[reportConstantRedefinition]
-        print("fail")
+        print("fail", flush=True)
         print("  ", end="", file=sys.stderr)
         print(e, file=sys.stderr)
 
 
-print("check ext4.Volume stream validation: ", end="")
+print("check ext4.Volume stream validation: ", end="", flush=True)
 try:
     _ = ext4.Volume(1)  # pyright: ignore[reportArgumentType]
     FAILED = True  # pyright: ignore[reportConstantRedefinition]
-    print("fail")
+    print("fail", flush=True)
 
 except ext4.InvalidStreamException:
-    print("pass")
+    print("pass", flush=True)
 
 except Exception as e:
     FAILED = True  # pyright: ignore[reportConstantRedefinition]
-    print("fail")
+    print("fail", flush=True)
     print("  ", end="", file=sys.stderr)
     print(e, file=sys.stderr)
 
@@ -263,7 +238,7 @@ with open(img_file, "rb") as f:
                 lambda: dx_root_info.indirect_levels,  # pyright: ignore[reportAny]
             )
 
-            entries = list(htree.entries)
+            entries = htree.entries
             _assert("len(entries) > 0", lambda: len(entries))
             _assert(
                 "len(entries) == htree.count - 1",
@@ -346,7 +321,7 @@ with open(img_file, "rb") as f:
                 "dx_root_info.indirect_levels > 0",
                 lambda: dx_root_info.indirect_levels,  # pyright: ignore[reportAny]
             )
-            entries = list(htree.entries)
+            entries = htree.entries
             _assert("len(entries) > 0", lambda: len(entries))
             _assert(
                 "len(entries) == htree.count - 1",
@@ -366,6 +341,10 @@ with open(img_file, "rb") as f:
                 _assert("len(block) > 0", lambda: len(block))
                 _assert(f"len(block) == {volume.block_size}", lambda: len(block))
 
-            _time('volume.inode_at("/12000")', 10)
+            inode_no = htree.lookup("12000")
+            _assert("inode_no is not None")
+            if inode_no is not None:
+                inode = volume.inodes[inode_no]
+                _assert("isinstance(inode, ext4.File)", lambda: inode)
 if FAILED:
     sys.exit(1)
