@@ -62,6 +62,7 @@ jobs:
             test64.ext4
             test64.ext4.tmp
             test_htree.ext4
+            test_htree_multi.ext4
           if-no-files-found: error
 
   test:
