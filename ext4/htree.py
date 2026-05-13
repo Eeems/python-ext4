@@ -411,8 +411,12 @@ class DXRoot(DXEntriesBase):
             else:
                 hi = mid - 1
 
+        leaf_entries: DXEntries | None = None
+        leaf_idx: int = -1
         if hi >= 0:
             block_num = entries[hi].block  # pyright: ignore[reportAny]
+            leaf_entries = entries
+            leaf_idx = hi
 
         for _ in range(assert_cast(self.dx_root_info.indirect_levels, int)):  # pyright: ignore[reportAny]
             node = DXNode(
@@ -437,37 +441,60 @@ class DXRoot(DXEntriesBase):
                 else assert_cast(node.block, int)  # pyright: ignore[reportAny]
             )
 
-        with BlockIO(self.directory) as blockio:
-            leaf_data = blockio.blocks[block_num]
+            if hi >= 0:
+                leaf_entries = node_entries
+                leaf_idx = hi
 
-        offset: int = 0
+            else:
+                leaf_entries = None
+                leaf_idx = -1
+
+        blocks_to_scan: list[int] = []
+        if leaf_entries is not None and leaf_idx >= 0:
+            current_idx = leaf_idx
+            while current_idx < len(leaf_entries):
+                entry = leaf_entries[current_idx]
+                blocks_to_scan.append(entry.block)  # pyright: ignore[reportAny]
+                if not (entry.hash & 1):  # pyright: ignore[reportAny]  # collision bit clear
+                    break
+
+                current_idx += 1
+
+        else:
+            blocks_to_scan = [block_num]
+
         has_filetype = self.directory.has_filetype
-        while offset + 8 <= len(leaf_data):
-            inode_val = int.from_bytes(leaf_data[offset : offset + 4], "little")
-            rec_len = int.from_bytes(leaf_data[offset + 4 : offset + 6], "little")
+        for scan_block in blocks_to_scan:
+            with BlockIO(self.directory) as blockio:
+                leaf_data = blockio.blocks[scan_block]
 
-            if rec_len == 0:
-                break
+            offset: int = 0
+            while offset + 8 <= len(leaf_data):
+                inode_val = int.from_bytes(leaf_data[offset : offset + 4], "little")
+                rec_len = int.from_bytes(leaf_data[offset + 4 : offset + 6], "little")
 
-            name_len = (
-                leaf_data[offset + 6]
-                if has_filetype
-                else int.from_bytes(leaf_data[offset + 6 : offset + 8], "little")
-            )
+                if rec_len == 0:
+                    break
 
-            if inode_val == 0 or name_len == 0:
+                name_len = (
+                    leaf_data[offset + 6]
+                    if has_filetype
+                    else int.from_bytes(leaf_data[offset + 6 : offset + 8], "little")
+                )
+
+                if inode_val == 0 or name_len == 0:
+                    offset += rec_len
+                    continue
+
+                name_start = offset + 8
+                if name_start + name_len > len(leaf_data):
+                    break
+
+                entry_name = leaf_data[name_start : name_start + name_len]
+                if entry_name == name:
+                    return inode_val
+
                 offset += rec_len
-                continue
-
-            name_start = offset + 8
-            if name_start + name_len > len(leaf_data):
-                break
-
-            entry_name = leaf_data[name_start : name_start + name_len]
-            if entry_name == name:
-                return inode_val
-
-            offset += rec_len
 
         return None
 

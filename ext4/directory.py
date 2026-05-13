@@ -1,4 +1,3 @@
-import errno
 from ctypes import (
     addressof,
     c_char,
