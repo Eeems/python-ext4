@@ -40,12 +40,7 @@ class DirectoryEntryStruct(Ext4Struct):
         reader = self.directory._open()  # pyright: ignore[reportPrivateUsage]
         _ = reader.seek(self.offset)
         data = reader.read(self.size)
-        if len(data) != self.size:
-            raise OSError(
-                errno.EIO,
-                f"Short read for {type(self).__name__} at offset {self.offset}",
-            )
-
+        # Do not guard against short reads, this happens for the last entry
         _ = memmove(addressof(self), data, self.size)
 
 
