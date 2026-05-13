@@ -224,7 +224,7 @@ def str2hashbuf(
     return buf[:num]
 
 
-def sign_extended_byte(signed_hash: int, value: int) -> int:
+def sign_extended_byte(signed_hash: bool, value: int) -> int:
     if signed_hash and value > 127:
         return value - 256
 
@@ -468,37 +468,40 @@ class DXRoot(DXEntriesBase):
             blocks_to_scan = [block_num]
 
         has_filetype = self.directory.has_filetype
-        for scan_block in blocks_to_scan:
-            with BlockIO(self.directory) as blockio:
+        with BlockIO(self.directory) as blockio:
+            for scan_block in blocks_to_scan:
                 leaf_data = blockio.blocks[scan_block]
+                offset: int = 0
+                while offset + 8 <= len(leaf_data):
+                    inode_val = int.from_bytes(leaf_data[offset : offset + 4], "little")
+                    rec_len = int.from_bytes(
+                        leaf_data[offset + 4 : offset + 6], "little"
+                    )
 
-            offset: int = 0
-            while offset + 8 <= len(leaf_data):
-                inode_val = int.from_bytes(leaf_data[offset : offset + 4], "little")
-                rec_len = int.from_bytes(leaf_data[offset + 4 : offset + 6], "little")
+                    if rec_len == 0:
+                        break
 
-                if rec_len == 0:
-                    break
+                    name_len = (
+                        leaf_data[offset + 6]
+                        if has_filetype
+                        else int.from_bytes(
+                            leaf_data[offset + 6 : offset + 8], "little"
+                        )
+                    )
 
-                name_len = (
-                    leaf_data[offset + 6]
-                    if has_filetype
-                    else int.from_bytes(leaf_data[offset + 6 : offset + 8], "little")
-                )
+                    if inode_val == 0 or name_len == 0:
+                        offset += rec_len
+                        continue
 
-                if inode_val == 0 or name_len == 0:
+                    name_start = offset + 8
+                    if name_start + name_len > len(leaf_data):
+                        break
+
+                    entry_name = leaf_data[name_start : name_start + name_len]
+                    if entry_name == name:
+                        return inode_val
+
                     offset += rec_len
-                    continue
-
-                name_start = offset + 8
-                if name_start + name_len > len(leaf_data):
-                    break
-
-                entry_name = leaf_data[name_start : name_start + name_len]
-                if entry_name == name:
-                    return inode_val
-
-                offset += rec_len
 
         return None
 
