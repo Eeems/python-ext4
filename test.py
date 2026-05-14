@@ -11,6 +11,38 @@ from typing import (
 )
 
 import ext4
+from ext4._compat import PeekableStream
+
+
+class _ShortReadStream:
+    """Returns all but the last byte to test Volume.read() loops on short reads."""
+
+    def __init__(self, stream: PeekableStream) -> None:
+        self._stream: PeekableStream = stream
+
+    def read(self, size: int | None = -1, /) -> bytes:
+        if size is None or size < 0:
+            data = self._stream.read(size)
+            if len(data) <= 1:
+                return data
+
+            _ = self._stream.seek(-1, os.SEEK_CUR)
+            return data[:-1]
+
+        if size <= 1:
+            return self._stream.read(size)
+
+        return self._stream.read(size - 1)
+
+    def peek(self, size: int = 0, /) -> bytes:
+        return self._stream.peek(size)
+
+    def seek(self, offset: int, whence: int = os.SEEK_SET, /) -> int:
+        return self._stream.seek(offset, whence)
+
+    def tell(self) -> int:
+        return self._stream.tell()
+
 
 FAILED = False
 
@@ -180,6 +212,22 @@ for img_file in ("test32.ext4", "test64.ext4"):
         _assert("isinstance(inode, ext4.SymbolicLink)")
         _assert('inode.readlink() == b"test.txt"', inode.readlink)
 
+        try:
+            volume = ext4.Volume(_ShortReadStream(f), offset=offset)
+
+        except Exception:
+            FAILED = True  # pyright: ignore[reportConstantRedefinition]
+            traceback.print_exc()
+            continue
+
+        _assert("volume.superblock is not None")
+        test_root_inode(volume)
+        inode = cast(ext4.File, volume.inode_at("/test.txt"))
+        _assert("isinstance(inode, ext4.File)")
+        data = inode.open().read()
+        _assert("len(data) > 0")
+        _assert("data.startswith(b'hello world')")
+
 img_file = "test_htree.ext4"
 print(f"Testing image: {img_file}")
 with open(img_file, "rb") as f:
@@ -346,5 +394,6 @@ with open(img_file, "rb") as f:
             if inode_no is not None:
                 inode = volume.inodes[inode_no]
                 _assert("isinstance(inode, ext4.File)", lambda: inode)
+
 if FAILED:
     sys.exit(1)
