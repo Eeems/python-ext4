@@ -35,7 +35,17 @@ class _ShortReadStream:
         return self._stream.read(size - 1)
 
     def peek(self, size: int = 0, /) -> bytes:
-        return self._stream.peek(size)
+        if size < 0:
+            data = self._stream.peek(size)
+            if len(data) <= 1:
+                return data
+
+            return data[:-1]
+
+        if size <= 1:
+            return self._stream.peek(size)
+
+        return self._stream.peek(size - 1)
 
     def seek(self, offset: int, whence: int = os.SEEK_SET, /) -> int:
         return self._stream.seek(offset, whence)

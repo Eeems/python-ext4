@@ -236,7 +236,7 @@ class Volume:
 
             data.extend(chunk)
             remaining -= len(chunk)
-            _ = self.stream.seek(len(chunk), os.SEEK_CUR)
+            _ = self.stream.seek(len(chunk), io.SEEK_CUR)
 
         data = data[:size]
         _ = self.stream.seek(self.offset + self.cursor)
