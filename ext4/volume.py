@@ -211,13 +211,36 @@ class Volume:
 
     def read(self, size: int) -> bytes:
         _ = self.stream.seek(self.offset + self.cursor)
-        data = self.stream.read(size)
+        remaining = size
+        data = bytearray()
+        while remaining > 0:
+            chunk = self.stream.read(remaining)
+            if not chunk:
+                break
+
+            data.extend(chunk)
+            remaining -= len(chunk)
+
+        data = data[:size]
         self.cursor += len(data)
-        return data
+        return bytes(data)
 
     def peek(self, size: int) -> bytes:
         _ = self.stream.seek(self.offset + self.cursor)
-        return self.stream.peek(size)
+        remaining = size
+        data = bytearray()
+        while remaining > 0:
+            chunk = self.stream.peek(remaining)
+            if not chunk:
+                break
+
+            data.extend(chunk)
+            remaining -= len(chunk)
+            _ = self.stream.seek(len(chunk), io.SEEK_CUR)
+
+        data = data[:size]
+        _ = self.stream.seek(self.offset + self.cursor)
+        return bytes(data)
 
     def tell(self) -> int:
         return self.cursor
