@@ -32,11 +32,7 @@ def TypedEnumerationType(_type: type["SimpleCData"]):  # noqa: ANN201
                 _members_ = cast(dict[str, Any], data["_members_"])  # pyright: ignore[reportExplicitAny]
 
             data["_reverse_map_"] = {v: k for k, v in _members_.items()}  # pyright: ignore[reportAny]
-            cls = type(_type).__new__(cls, name, bases, data)  # pyright: ignore[reportCallIssue, reportUnknownVariableType]  # noqa: PLW0642
-            for key, value in cast(dict[str, Any], cls._members_).items():  # pyright: ignore[reportExplicitAny, reportAny]
-                globals()[key] = value
-
-            return cls  # pyright: ignore[reportUnknownVariableType]
+            return type(_type).__new__(cls, name, bases, data)  # pyright: ignore[reportCallIssue, reportUnknownVariableType]  # noqa: PLW0642
 
         @override
         def __repr__(self) -> str:
