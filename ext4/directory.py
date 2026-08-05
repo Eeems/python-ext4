@@ -65,12 +65,12 @@ class DirectoryEntry(DirectoryEntryBase):
     __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("l_i_reserved",)
-    _fields_ = [
+    _fields_ = (
         ("inode", c_uint32),
         ("rec_len", c_uint16),
         ("name_len", c_uint16),
         ("name", c_char * EXT4_NAME_LEN),
-    ]
+    )
 
 
 @final
@@ -78,13 +78,13 @@ class DirectoryEntry2(DirectoryEntryBase):
     __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("l_i_reserved",)
-    _fields_ = [
+    _fields_ = (
         ("inode", c_uint32),
         ("rec_len", c_uint16),
         ("name_len", c_uint8),
         ("file_type", EXT4_FT.basetype),
         ("name", c_char * EXT4_NAME_LEN),
-    ]
+    )
 
     @DirectoryEntryBase.is_fake_entry.getter
     def is_fake_entry(self) -> bool:
@@ -97,13 +97,13 @@ class DirectoryEntryTail(DirectoryEntryStruct):
     __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("det_reserved_zero1", "det_reserved_zero2",)
-    _fields_ = [
+    _fields_ = (
         ("det_reserved_zero1", c_uint32),
         ("det_rec_len", c_uint16),
         ("det_reserved_zero2", c_uint8),
         ("det_reserved_ft", c_uint8),  # EXT4_FT.DIR_CSUM
         ("det_checksum", c_uint32),
-    ]
+    )
 
     @Ext4Struct.magic.getter
     def magic(self) -> int:
@@ -120,7 +120,7 @@ class DirectoryEntryHash(DirectoryEntryStruct):
     __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("det_reserved_zero1", "det_reserved_zero2",)
-    _fields_ = [
+    _fields_ = (
         ("hash", c_uint32),
         ("minor_hash", c_uint32),
-    ]
+    )

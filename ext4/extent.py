@@ -89,13 +89,13 @@ class ExtentHeader(Ext4Struct):
 
     _pack_ = 1
     # _anonymous_ = ()
-    _fields_ = [
+    _fields_ = (
         ("eh_magic", c_uint16),
         ("eh_entries", c_uint16),
         ("eh_max", c_uint16),
         ("eh_depth", c_uint16),
         ("eh_generation", c_uint32),
-    ]
+    )
 
     def __init__(self, tree: "ExtentTree", offset: int) -> None:
         self.tree: ExtentTree = tree
@@ -106,7 +106,7 @@ class ExtentHeader(Ext4Struct):
 
         offset = self.offset + self.size
         eh_entries = assert_cast(self.eh_entries, int)  # pyright: ignore[reportAny]
-        for i in range(0, eh_entries):
+        for i in range(eh_entries):
             if self.eh_depth == 0:
                 self.extents.append(Extent(self, offset, i))
                 offset += sizeof(Extent)
@@ -173,12 +173,12 @@ class ExtentIndex(Ext4Struct):
 
     _pack_ = 1
     # _anonymous_ = ("ei_unused",)
-    _fields_ = [
+    _fields_ = (
         ("ei_block", c_uint32),
         ("ei_leaf_lo", c_uint32),
         ("ei_leaf_hi", c_uint16),
         ("ei_unused", c_uint16),
-    ]
+    )
 
     def __init__(self, header: ExtentHeader, offset: int, ei_no: int) -> None:
         self.ei_no: int = ei_no
@@ -210,12 +210,12 @@ class Extent(Ext4Struct):
 
     _pack_ = 1
     # _anonymous_ = ("ei_unused",)
-    _fields_ = [
+    _fields_ = (
         ("ee_block", c_uint32),
         ("ee_len", c_uint16),
         ("ee_start_hi", c_uint16),
         ("ee_start_lo", c_uint32),
-    ]
+    )
 
     def __init__(self, header: ExtentHeader, offset: int, ee_no: int) -> None:
         super().__init__(header.inode.volume, offset)
@@ -258,9 +258,7 @@ class ExtentTail(Ext4Struct):
     __slots__ = ("header",)
 
     _pack_ = 1
-    _fields_ = [
-        ("et_checksum", c_uint32),
-    ]
+    _fields_ = (("et_checksum", c_uint32),)
 
     def __init__(self, header: ExtentHeader, offset: int) -> None:
         self.header: ExtentHeader = header

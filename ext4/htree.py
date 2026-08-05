@@ -59,13 +59,13 @@ class DotDirectoryEntry2(LittleEndianStructureWithVolume):
 
     _pack_ = 1
     # _anonymous_ = ()
-    _fields_ = [
+    _fields_ = (
         ("inode", c_uint32),
         ("rec_len", c_uint16),
         ("name_len", c_uint8),
         ("file_type", c_uint8),
         ("name", c_char * 4),  # b".\0\0\0" or b"..\0\0"
-    ]
+    )
 
     def verify(self) -> None:
         name = assert_cast(self.name, bytes)  # pyright: ignore[reportAny]
@@ -89,13 +89,13 @@ class DXRootInfo(LittleEndianStructure):
     __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("reserved_zero")
-    _fields_ = [
+    _fields_ = (
         ("reserved_zero", c_uint32),
         ("hash_version", DX_HASH.basetype),
         ("info_length", c_uint8),
         ("indirect_levels", c_uint8),
         ("unused_flags", c_uint8),
-    ]
+    )
 
 
 class DXBase(Ext4Struct):
@@ -128,10 +128,10 @@ class DXEntry(DXBase):
 
     _pack_ = 1
     # _anonymous_ = ("")
-    _fields_ = [
+    _fields_ = (
         ("hash", c_uint32),
         ("block", c_uint32),
-    ]
+    )
 
     def __init__(self, parent: "DXEntriesBase", index: int) -> None:
         self.index: int = index
@@ -321,7 +321,7 @@ class DXRoot(DXEntriesBase):
         super().__init__(inode, 0)
 
     # _anonymous_ = ("")
-    _fields_ = [
+    _fields_ = (
         ("dot", DotDirectoryEntry2),
         ("dotdot", DotDirectoryEntry2),
         ("dx_root_info", DXRootInfo),
@@ -329,7 +329,7 @@ class DXRoot(DXEntriesBase):
         ("count", c_uint16),
         ("block", c_uint32),
         # ("entries", DXEntry * self.count),
-    ]
+    )
 
     def compute_dx_hash(self, name: bytes, hash_version: int) -> tuple[int, int]:
         seed = self.directory.volume.superblock.s_hash_seed  # pyright: ignore[reportAny]
@@ -511,10 +511,10 @@ class DXFake(LittleEndianStructure):
     __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("")
-    _fields_ = [
+    _fields_ = (
         ("inode", c_uint32),  # 0
         ("rec_len", c_uint16),
-    ]
+    )
 
     @property
     def expected_magic(self) -> int:
@@ -532,7 +532,7 @@ class DXNode(DXEntriesBase):
 
     _pack_ = 1
     # _anonymous_ = ("")
-    _fields_ = [
+    _fields_ = (
         ("fake", DXFake),
         ("name_len", c_uint8),
         ("file_type", c_uint8),
@@ -540,7 +540,7 @@ class DXNode(DXEntriesBase):
         ("count", c_uint16),
         ("block", c_uint32),
         # ("entries", DXEntry * self.count),
-    ]
+    )
 
     def __init__(self, directory: "Directory", offset: int) -> None:
         super().__init__(directory, offset)
@@ -552,10 +552,10 @@ class DXTail(DXBase):
 
     _pack_ = 1
     # _anonymous_ = ("dt_reserved")
-    _fields_ = [
+    _fields_ = (
         ("dt_reserved", c_uint32),
         ("dt_checksum", c_uint16),
-    ]
+    )
 
     def __init__(self, parent: DXNode) -> None:
         self.parent = parent

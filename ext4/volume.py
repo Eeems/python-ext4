@@ -30,11 +30,11 @@ class InvalidStreamException(Exception):
 
 class Inodes:
     __slots__: tuple[str, ...] = (
+        "__dict__",
         "_getitem_cache",
         "_group_cache",
         "_offset_cache",
         "volume",
-        "__dict__",
     )
 
     def __init__(self, volume: Volume) -> None:
@@ -87,7 +87,7 @@ class Volume:
         "superblock",
     )
 
-    def __init__(
+    def __init__(  # noqa: PLR0917
         self,
         stream: PeekableStream,
         offset: int = 0,
@@ -122,7 +122,6 @@ class Volume:
         s_inodes_count = assert_cast(self.superblock.s_inodes_count, int)  # pyright: ignore[reportAny]
         s_inodes_per_group = assert_cast(self.superblock.s_inodes_per_group, int)  # pyright: ignore[reportAny]
         for index in range(
-            0,
             (s_inodes_count + s_inodes_per_group - 1) // s_inodes_per_group,
         ):
             descriptor = BlockDescriptor(
