@@ -48,9 +48,9 @@ class ExtendedAttributeIBodyHeader(ExtendedAttributeBase):
     __slots__: tuple[str, ...] = ()
     _pack_ = 1  # pyright: ignore[reportUnannotatedClassAttribute]
     # _anonymous_ = ()
-    _fields_ = [  # pyright: ignore[reportUnannotatedClassAttribute]
+    _fields_ = (  # pyright: ignore[reportUnannotatedClassAttribute]
         ("h_magic", c_uint32),  # 0xEA020000
-    ]
+    )
 
     @ExtendedAttributeBase.ignore_magic.getter
     def ignore_magic(self) -> bool:
@@ -115,13 +115,13 @@ class ExtendedAttributeHeader(ExtendedAttributeIBodyHeader):
     __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("h_reserved)
-    _fields_ = [
+    _fields_ = (
         ("h_refcount", c_uint32),
         ("h_blocks", c_uint32),
         ("h_hash", c_uint32),
         ("h_checksum", c_uint32),
         ("h_reserved", c_uint32 * 3),
-    ]
+    )
 
     @override
     def verify(self) -> None:
@@ -163,7 +163,7 @@ class ExtendedAttributeHeader(ExtendedAttributeIBodyHeader):
 class ExtendedAttributeEntry(ExtendedAttributeBase):
     __slots__: tuple[str, ...] = ("e_name",)
 
-    NAME_INDICES = [
+    NAME_INDICES = (
         "",
         "user.",
         "system.posix_acl_access",
@@ -173,10 +173,10 @@ class ExtendedAttributeEntry(ExtendedAttributeBase):
         "security.",
         "system.",
         "system.richacl",
-    ]
+    )
     _pack_ = 1
     # _anonymous_ = ("h_reserved)
-    _fields_ = [
+    _fields_ = (
         ("e_name_len", c_uint8),
         ("e_name_index", c_uint8),
         ("e_value_offs", c_uint16),
@@ -184,7 +184,7 @@ class ExtendedAttributeEntry(ExtendedAttributeBase):
         ("e_value_size", c_uint32),
         ("e_hash", c_uint32),
         # ("e_name", c_char * self.e_name_len),
-    ]
+    )
 
     def __init__(self, inode: "Inode", offset: int, size: int) -> None:
         self.e_name: bytes = b""

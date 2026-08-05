@@ -25,7 +25,7 @@ class BlockDescriptor(Ext4Struct):
 
     _pack_ = 1
     # _anonymous_ = ("bg_reserved",)
-    _fields_ = [
+    _fields_ = (
         ("bg_block_bitmap_lo", c_uint32),
         ("bg_inode_bitmap_lo", c_uint32),
         ("bg_inode_table_lo", c_uint32),
@@ -49,7 +49,7 @@ class BlockDescriptor(Ext4Struct):
         ("bg_block_bitmap_csum_hi", c_uint16),
         ("bg_inode_bitmap_csum_hi", c_uint16),
         ("bg_reserved", c_uint32),
-    ]
+    )
 
     def __init__(self, volume: "Volume", offset: int, bg_no: int) -> None:
         super().__init__(volume, offset)

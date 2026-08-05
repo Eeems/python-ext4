@@ -15,6 +15,7 @@ from ctypes import (
 from typing import (
     TYPE_CHECKING,
     Any,
+    Self,
     final,
 )
 
@@ -83,18 +84,14 @@ class MalformedInodeError(Exception):
 class Linux1(LittleEndianStructure):
     __slots__ = ()
     _pack_ = 1
-    _fields_ = [
-        ("l_i_version", c_uint32),
-    ]
+    _fields_ = (("l_i_version", c_uint32),)
 
 
 @final
 class Hurd1(LittleEndianStructure):
     __slots__ = ()
     _pack_ = 1
-    _fields_ = [
-        ("h_i_translator", c_uint32),
-    ]
+    _fields_ = (("h_i_translator", c_uint32),)
 
 
 @final
@@ -102,20 +99,18 @@ class Masix1(LittleEndianStructure):
     __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("m_i_reserved1",)
-    _fields_ = [
-        ("m_i_reserved1", c_uint32),
-    ]
+    _fields_ = (("m_i_reserved1", c_uint32),)
 
 
 @final
 class Osd1(LittleEndianUnion):
     __slots__ = ()
     _pack_ = 1
-    _fields_ = [
+    _fields_ = (
         ("linux1", Linux1),
         ("hurd1", Hurd1),
         ("masix1", Masix1),
-    ]
+    )
 
 
 @final
@@ -123,14 +118,14 @@ class Linux2(LittleEndianStructure):
     __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("l_i_reserved",)
-    _fields_ = [
+    _fields_ = (
         ("l_i_blocks_high", c_uint16),
         ("l_i_file_acl_high", c_uint16),
         ("l_i_uid_high", c_uint16),
         ("l_i_gid_high", c_uint16),
         ("l_i_checksum_lo", c_uint16),
         ("l_i_reserved", c_uint16),
-    ]
+    )
 
 
 @final
@@ -138,13 +133,13 @@ class Hurd2(LittleEndianStructure):
     __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("h_i_reserved1",)
-    _fields_ = [
+    _fields_ = (
         ("h_i_reserved1", c_uint16),
         ("h_i_mode_high", c_uint16),
         ("h_i_uid_high", c_uint16),
         ("h_i_gid_high", c_uint16),
         ("h_i_author", c_uint32),
-    ]
+    )
 
 
 @final
@@ -152,22 +147,22 @@ class Masix2(LittleEndianStructure):
     __slots__ = ()
     _pack_ = 1
     # _anonymous_ = ("h_i_reserved1", "m_i_reserved2")
-    _fields_ = [
+    _fields_ = (
         ("h_i_reserved1", c_uint16),
         ("m_i_file_acl_high", c_uint16),
         ("m_i_reserved2", c_uint32 * 2),
-    ]
+    )
 
 
 @final
 class Osd2(LittleEndianUnion):
     __slots__ = ()
     _pack_ = 1
-    _fields_ = [
+    _fields_ = (
         ("linux2", Linux2),
         ("hurd2", Hurd2),
         ("masix2", Masix2),
-    ]
+    )
 
 
 class Inode(Ext4Struct):
@@ -178,7 +173,7 @@ class Inode(Ext4Struct):
         "tree",
     )
     _pack_ = 1  # pyright: ignore[reportUnannotatedClassAttribute]
-    _fields_ = [  # pyright: ignore[reportUnannotatedClassAttribute]
+    _fields_ = (  # pyright: ignore[reportUnannotatedClassAttribute]
         ("i_mode", MODE.basetype),
         ("i_uid", c_uint16),
         ("i_size_lo", c_uint32),
@@ -206,7 +201,7 @@ class Inode(Ext4Struct):
         ("i_crtime_extra", c_uint32),
         ("i_version_hi", c_uint32),
         ("i_projid", c_uint32),
-    ]
+    )
 
     @classmethod
     def get_file_type(cls, volume: Volume, offset: int) -> EXT4_FT:
@@ -239,7 +234,7 @@ class Inode(Ext4Struct):
             case _:
                 return EXT4_FT.UNKNOWN  # pyright: ignore[reportReturnType]
 
-    def __new__(cls, volume: Volume, offset: int, i_no: int) -> Inode:
+    def __new__(cls, volume: Volume, offset: int, i_no: int) -> Self:
         if cls is not Inode:
             return super().__new__(cls)
 
@@ -527,10 +522,10 @@ class SymbolicLink(Inode):
 @final
 class Directory(Inode):
     __slots__ = (
+        "__dict__",
         "_dirents",
         "_inode_at_cache",
         "htree",
-        "__dict__",
     )
 
     def __init__(self, volume: Volume, offset: int, i_no: int) -> None:

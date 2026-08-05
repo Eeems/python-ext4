@@ -165,7 +165,7 @@ def mkfs(fdp: atheris.FuzzedDataProvider, imgdir: str) -> str:  # pyright: ignor
             img_path,
             f"{img_size}M",
         ]
-        mkfs_proc = subprocess.run(cmd, check=False, capture_output=True, text=True)  # noqa: S607,S603
+        mkfs_proc = subprocess.run(cmd, check=False, capture_output=True, text=True)
 
     if mkfs_proc.returncode != 0:
         print(mkfs_proc.stdout)

@@ -6,6 +6,7 @@ from ctypes import (
 from typing import (
     TYPE_CHECKING,
     Any,
+    Self,
     cast,
     final,
 )
@@ -17,8 +18,13 @@ if TYPE_CHECKING:
 
 
 def TypedEnumerationType(_type: type["SimpleCData"]):  # noqa: ANN201
-    class EnumerationType(type(_type)):  # type: ignore  # pyright: ignore[reportGeneralTypeIssues, reportUntypedBaseClass] #noqa: ANN201
-        def __new__(cls, name: str, bases: tuple[type, ...], data: dict[str, Any]):  # pyright: ignore[reportExplicitAny, reportUnknownParameterType]  # noqa: ANN204
+    class EnumerationType(type(_type)):  # type: ignore  # pyright: ignore[reportGeneralTypeIssues, reportUntypedBaseClass]
+        def __new__(
+            cls,
+            name: str,
+            bases: tuple[type, ...],
+            data: dict[str, Any],  # pyright: ignore[reportExplicitAny]
+        ) -> Self:
             _members_: dict[str, Any]  # pyright: ignore[reportExplicitAny]
             if "_members_" not in data:
                 _members_ = {}
@@ -32,7 +38,7 @@ def TypedEnumerationType(_type: type["SimpleCData"]):  # noqa: ANN201
                 _members_ = cast(dict[str, Any], data["_members_"])  # pyright: ignore[reportExplicitAny]
 
             data["_reverse_map_"] = {v: k for k, v in _members_.items()}  # pyright: ignore[reportAny]
-            return type(_type).__new__(cls, name, bases, data)  # pyright: ignore[reportCallIssue, reportUnknownVariableType]  # noqa: PLW0642
+            return type(_type).__new__(cls, name, bases, data)  # pyright: ignore[reportCallIssue, reportUnknownVariableType]
 
         @override
         def __repr__(self) -> str:
@@ -42,8 +48,8 @@ def TypedEnumerationType(_type: type["SimpleCData"]):  # noqa: ANN201
 
 
 def TypedCEnumeration(_type: type["SimpleCData"]):  # noqa: ANN201
-    class CEnumeration(_type, metaclass=TypedEnumerationType(_type)):  # pyright: ignore[reportGeneralTypeIssues, reportUntypedBaseClass] # noqa: ANN201,PLW1641,PLW1641
-        _members_: dict[str, Any] = {}  # pyright: ignore[reportExplicitAny]
+    class CEnumeration(_type, metaclass=TypedEnumerationType(_type)):  # pyright: ignore[reportGeneralTypeIssues, reportUntypedBaseClass] # noqa: PLW1641
+        _members_: dict[str, Any] = {}  # pyright: ignore[reportExplicitAny]  # noqa: RUF012
         basetype: type["SimpleCData"] = _type
 
         @override
@@ -52,18 +58,18 @@ def TypedCEnumeration(_type: type["SimpleCData"]):  # noqa: ANN201
             return f"<{self.__class__.__name__}.{self._reverse_map_.get(value, '(unknown)')}: {value}>"  # pyright: ignore[reportUnknownMemberType]
 
         @override
-        def __eq__(self, other: Any) -> bool:  # pyright: ignore[reportExplicitAny, reportAny]
+        def __eq__(self, other: object) -> bool:
             if isinstance(other, int):
                 return self.value == other  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
-            return isinstance(self, type(other)) and self.value == other.value  # pyright: ignore[reportUnknownVariableType, reportAny, reportUnknownMemberType]
+            return isinstance(self, type(other)) and self.value == other.value  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType, reportAttributeAccessIssue]
 
         @override
-        def __ne__(self, other: Any) -> bool:  # pyright: ignore[reportExplicitAny, reportAny]
+        def __ne__(self, other: object) -> bool:
             if isinstance(other, int):
                 return self.value != other  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
-            return isinstance(self, type(other)) and self.value != other.value  # pyright: ignore[reportUnknownVariableType, reportAny, reportUnknownMemberType]
+            return isinstance(self, type(other)) and self.value != other.value  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType, reportAttributeAccessIssue]
 
         @override
         def __and__(self, other: Any) -> int | bool:  # pyright: ignore[reportExplicitAny, reportAny, reportGeneralTypeIssues]

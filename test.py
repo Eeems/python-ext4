@@ -58,7 +58,7 @@ FAILED = False
 
 
 def test_path_tuple(path: str | bytes, expected: tuple[bytes, ...]) -> None:
-    global FAILED  # noqa: PLW0603
+    global FAILED
     print(f"check Volume.path_tuple({path}): ", end="", flush=True)
     try:
         t = ext4.Volume.path_tuple(path)
@@ -67,24 +67,24 @@ def test_path_tuple(path: str | bytes, expected: tuple[bytes, ...]) -> None:
 
         print("pass", flush=True)
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         FAILED = True  # pyright: ignore[reportConstantRedefinition]
         print("fail", flush=True)
         print("  ", end="", file=sys.stderr)
         print(e, file=sys.stderr)
 
 
-def _eval_or_False(source: str) -> Any:  # pyright: ignore[reportExplicitAny, reportAny]  # noqa: ANN401
+def _eval_or_False(source: str) -> Any:  # pyright: ignore[reportExplicitAny, reportAny]
     try:
         return eval(source)  # pyright: ignore[reportAny]  # noqa: S307
 
-    except Exception:
+    except Exception:  # noqa: BLE001
         traceback.print_exc()
         return False
 
 
 def _assert(source: str, debug: Callable[[], Any] | None = None) -> None:  # pyright: ignore[reportExplicitAny]
-    global FAILED  # noqa: PLW0603
+    global FAILED
     print(f"check {source}: ", end="", flush=True)
     if _eval_or_False(source):
         print("pass", flush=True)
@@ -97,13 +97,13 @@ def _assert(source: str, debug: Callable[[], Any] | None = None) -> None:  # pyr
 
 
 def _not_raises(source: str, debug: Callable[[], Any] | None = None) -> None:  # pyright: ignore[reportExplicitAny]
-    global FAILED  # noqa: PLW0603
+    global FAILED
     print(f"check {source} does not raise exception: ", end="", flush=True)
     try:
         _ = eval(source)  # noqa: S307  # pyright: ignore[reportAny]
         print("pass", flush=True)
 
-    except Exception:
+    except Exception:  # noqa: BLE001
         FAILED = True  # pyright: ignore[reportConstantRedefinition]
         print("fail", flush=True)
         if debug is not None:
@@ -111,7 +111,7 @@ def _not_raises(source: str, debug: Callable[[], Any] | None = None) -> None:  #
 
 
 def test_magic_error(f: BufferedReader) -> None:
-    global FAILED  # noqa: PLW0603
+    global FAILED
     try:
         print("check MagicError: ", end="", flush=True)
         _ = ext4.Volume(f, offset=0)
@@ -121,7 +121,7 @@ def test_magic_error(f: BufferedReader) -> None:
     except ext4.struct.MagicError:
         print("pass", flush=True)
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         FAILED = True  # pyright: ignore[reportConstantRedefinition]
         print("fail", flush=True)
         print("  ", end="", file=sys.stderr)
@@ -129,7 +129,7 @@ def test_magic_error(f: BufferedReader) -> None:
 
 
 def test_root_inode(volume: ext4.Volume) -> None:
-    global FAILED  # noqa: PLW0603
+    global FAILED
     try:
         print("Validate root inode: ", end="", flush=True)
         volume.root.validate()
@@ -151,14 +151,14 @@ try:
 except ext4.InvalidStreamException:
     print("pass", flush=True)
 
-except Exception as e:
+except Exception as e:  # noqa: BLE001
     FAILED = True  # pyright: ignore[reportConstantRedefinition]
     print("fail", flush=True)
     print("  ", end="", file=sys.stderr)
     print(e, file=sys.stderr)
 
-test_path_tuple("/", tuple())
-test_path_tuple(b"/", tuple())
+test_path_tuple("/", ())
+test_path_tuple(b"/", ())
 test_path_tuple("/test", (b"test",))
 test_path_tuple(b"/test", (b"test",))
 test_path_tuple("/test/test", (b"test", b"test"))
@@ -167,7 +167,7 @@ test_path_tuple(b"/test/test", (b"test", b"test"))
 for img_file in ("test32.ext4", "test64.ext4"):
     print(f"Testing image: {img_file}")
     offset = os.path.getsize(img_file) - os.path.getsize(f"{img_file}.tmp")
-    _assert("offset > 0", lambda: offset)
+    _assert("offset > 0", lambda: offset)  # noqa: B023
     if offset < 0:
         continue
 
@@ -178,7 +178,7 @@ for img_file in ("test32.ext4", "test64.ext4"):
         try:
             volume = ext4.Volume(f, offset=offset)
 
-        except Exception:
+        except Exception:  # noqa: BLE001
             FAILED = True  # pyright: ignore[reportConstantRedefinition]
             traceback.print_exc()
             continue
@@ -206,7 +206,7 @@ for img_file in ("test32.ext4", "test64.ext4"):
             inode = volume.inode_at(f"/test{i}.txt")
             attrs = {k: v for k, v in inode.xattrs}
             for j in range(1, 21):
-                _assert(f'attrs["user.name{j}"] == b"value{i}_{j}"', lambda: attrs)
+                _assert(f'attrs["user.name{j}"] == b"value{i}_{j}"', lambda: attrs)  # noqa: B023
 
             data = inode.open().read()
             _assert(f'data == b"hello world{i}\\n"')
@@ -216,7 +216,7 @@ for img_file in ("test32.ext4", "test64.ext4"):
         data = b"hello world1\n"
         for x in range(1, 15):
             _ = b.seek(0)
-            _assert(f"b.read({x}) == {data[:x]}", lambda: b.seek(0) == 0 and b.read(x))
+            _assert(f"b.read({x}) == {data[:x]}", lambda: b.seek(0) == 0 and b.read(x))  # noqa: B023
 
         inode = cast(ext4.SymbolicLink, volume.inode_at("/symlink.txt"))
         _assert("isinstance(inode, ext4.SymbolicLink)")
@@ -225,7 +225,7 @@ for img_file in ("test32.ext4", "test64.ext4"):
         try:
             volume = ext4.Volume(_ShortReadStream(f), offset=offset)
 
-        except Exception:
+        except Exception:  # noqa: BLE001
             FAILED = True  # pyright: ignore[reportConstantRedefinition]
             traceback.print_exc()
             continue
@@ -245,7 +245,7 @@ with open(img_file, "rb") as f:
     try:
         volume = ext4.Volume(f)
 
-    except Exception:
+    except Exception:  # noqa: BLE001
         FAILED = True  # pyright: ignore[reportConstantRedefinition]
         traceback.print_exc()
 
@@ -303,8 +303,8 @@ with open(img_file, "rb") as f:
                 lambda: f"{len(entries)} != {htree.count - 1}",  # pyright: ignore[reportAny, reportOptionalMemberAccess]
             )
             for entry in entries:
-                _assert("isinstance(entry.hash, int)", lambda: entry.hash)  # pyright: ignore[reportAny]
-                _assert("isinstance(entry.block, int)", lambda: entry.block)  # pyright: ignore[reportAny]
+                _assert("isinstance(entry.hash, int)", lambda: entry.hash)  # pyright: ignore[reportAny]  # noqa: B023
+                _assert("isinstance(entry.block, int)", lambda: entry.block)  # pyright: ignore[reportAny]  # noqa: B023
 
             if entries:
                 first_entry = entries[0]
@@ -329,7 +329,7 @@ with open(img_file, "rb") as f:
     try:
         volume = ext4.Volume(f)
 
-    except Exception:
+    except Exception:  # noqa: BLE001
         FAILED = True  # pyright: ignore[reportConstantRedefinition]
         traceback.print_exc()
 
@@ -386,8 +386,8 @@ with open(img_file, "rb") as f:
                 lambda: f"{len(entries)} != {htree.count - 1}",  # pyright: ignore[reportAny, reportOptionalMemberAccess]
             )
             for entry in entries:
-                _assert("isinstance(entry.hash, int)", lambda: entry.hash)  # pyright: ignore[reportAny]
-                _assert("isinstance(entry.block, int)", lambda: entry.block)  # pyright: ignore[reportAny]
+                _assert("isinstance(entry.hash, int)", lambda: entry.hash)  # pyright: ignore[reportAny]  # noqa: B023
+                _assert("isinstance(entry.block, int)", lambda: entry.block)  # pyright: ignore[reportAny]  # noqa: B023
 
             if entries:
                 first_entry = entries[0]

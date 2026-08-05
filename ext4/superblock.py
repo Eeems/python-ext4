@@ -44,7 +44,7 @@ class Superblock(Ext4Struct):
     #     "s_reserved_pad",
     #     "s_reserved",
     # )
-    _fields_ = [
+    _fields_ = (
         ("s_inodes_count", c_uint32),
         ("s_blocks_count_lo", c_uint32),
         ("s_r_blocks_count_lo", c_uint32),
@@ -136,7 +136,7 @@ class Superblock(Ext4Struct):
         ("s_checksum_seed", c_uint32),
         ("s_reserved", c_uint32 * 98),
         ("s_checksum", c_uint32),
-    ]
+    )
 
     def __init__(self, volume: "Volume", _=None) -> None:
         super().__init__(volume, 0x400)
